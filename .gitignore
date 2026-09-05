@@ -1,0 +1,11 @@
+# AtlasX-docker — 切勿提交密钥
+.env
+*.env.local
+.DS_Store
+build-src/
+*.pem
+*.key
+# 绝不把 PAT / 凭据放进仓
+secrets/
+.gh-token
+.github_token
