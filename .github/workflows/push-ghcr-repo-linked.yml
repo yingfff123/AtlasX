@@ -29,31 +29,33 @@ jobs:
         run: |
           set -euo pipefail
           docker load -i /tmp/atlasx-mvp.tar.gz
-          # 与仓库同名，便于 Actions 管理可见性
-          IMAGE="ghcr.io/${{ github.repository }}"
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          # GHCR 仓库名必须全小写
+          IMAGE="ghcr.io/${OWNER}/atlasx-docker"
+          SHORT="ghcr.io/${OWNER}/atlasx"
           docker tag atlasx:mvp "${IMAGE}:mvp"
           docker tag atlasx:mvp "${IMAGE}:latest"
-          # 同时保留短名 atlasx
-          docker tag atlasx:mvp "ghcr.io/${{ github.repository_owner }}/atlasx:mvp"
-          docker tag atlasx:mvp "ghcr.io/${{ github.repository_owner }}/atlasx:latest"
+          docker tag atlasx:mvp "${SHORT}:mvp"
+          docker tag atlasx:mvp "${SHORT}:latest"
           echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "${IMAGE}:mvp"
           docker push "${IMAGE}:latest"
-          docker push "ghcr.io/${{ github.repository_owner }}/atlasx:mvp"
-          docker push "ghcr.io/${{ github.repository_owner }}/atlasx:latest"
+          docker push "${SHORT}:mvp"
+          docker push "${SHORT}:latest"
           docker logout ghcr.io
+          echo "pushed ${IMAGE} and ${SHORT}"
 
-      - name: Prefer public visibility (repo package)
+      - name: Prefer public visibility
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          # repo-linked package name is often the image path segment
-          for name in AtlasX-docker atlasx-docker atlasx; do
+          for name in atlasx-docker atlasx; do
             echo "try visibility $name"
             gh api --method PUT \
               -H "Accept: application/vnd.github+json" \
               "/user/packages/container/${name}/visibility" \
-              -f visibility=public && echo OK_$name && break
+              -f visibility=public && echo OK_$name && exit 0
           done
-          true
+          echo "WARN: set package Public in GitHub UI if API 404"
+          exit 0
