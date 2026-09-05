@@ -1,0 +1,7 @@
+{
+  "name": "AtlasX",
+  "version": "0.2.4",
+  "notes": "通道已就绪。上传升级包并改本文件的 version / download_url / sha256 后，用户点「检查更新」即可一键下载应用。",
+  "download_url": "https://github.com/yingfff123/AtlasX-docker/releases/latest/download/atlasx-upgrade.zip",
+  "sha256": ""
+}
