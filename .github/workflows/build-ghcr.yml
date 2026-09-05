@@ -4,13 +4,8 @@
 name: build-ghcr
 
 on:
+  # 需先有私有/公开仓 yingfff123/AtlasX（源码）；未就绪前请勿依赖自动构建
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "Dockerfile.mvp"
-      - "Dockerfile"
-      - ".github/workflows/build-ghcr.yml"
 
 permissions:
   contents: read
