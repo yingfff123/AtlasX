@@ -1,0 +1,43 @@
+# MVP 运行镜像：整仓可跑 Python + subfinder
+# build context = AtlasX 仓库根；本文件位于 AtlasX-docker/
+# 禁止：ARG/ENV 传入 GitHub PAT；禁止 COPY .env / 密钥文件
+
+FROM python:3.12-slim-bookworm
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# subfinder（linux amd64）；缺失时采集层 degraded，但 MVP 要求尽量带上
+ARG SUBFINDER_VERSION=2.7.0
+RUN set -eux; \
+  arch="$(uname -m)"; \
+  case "$arch" in \
+    x86_64) sf_arch=amd64 ;; \
+    aarch64|arm64) sf_arch=arm64 ;; \
+    *) echo "unsupported arch: $arch"; exit 1 ;; \
+  esac; \
+  curl -fsSL \
+    "https://github.com/projectdiscovery/subfinder/releases/download/v${SUBFINDER_VERSION}/subfinder_${SUBFINDER_VERSION}_linux_${sf_arch}.zip" \
+    -o /tmp/sf.zip; \
+  apt-get update && apt-get install -y --no-install-recommends unzip \
+  && unzip -o /tmp/sf.zip -d /usr/local/bin subfinder \
+  && chmod +x /usr/local/bin/subfinder \
+  && rm -f /tmp/sf.zip \
+  && apt-get purge -y unzip && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY migrations ./migrations
+COPY alembic.ini ./
+
+RUN pip install --no-cache-dir -e .
+
+ENV PATH="/usr/local/bin:${PATH}"
+EXPOSE 8000
+
+# 默认 web；compose 覆盖为 worker
+CMD ["uvicorn", "radar.server.app:app", "--host", "0.0.0.0", "--port", "8000"]
