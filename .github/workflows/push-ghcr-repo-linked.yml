@@ -1,0 +1,59 @@
+name: push-ghcr-repo-linked
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        default: "image-mvp"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "atlasx-mvp.tar.gz" --dir /tmp
+
+      - name: Load and push as repo-linked package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          docker load -i /tmp/atlasx-mvp.tar.gz
+          # 与仓库同名，便于 Actions 管理可见性
+          IMAGE="ghcr.io/${{ github.repository }}"
+          docker tag atlasx:mvp "${IMAGE}:mvp"
+          docker tag atlasx:mvp "${IMAGE}:latest"
+          # 同时保留短名 atlasx
+          docker tag atlasx:mvp "ghcr.io/${{ github.repository_owner }}/atlasx:mvp"
+          docker tag atlasx:mvp "ghcr.io/${{ github.repository_owner }}/atlasx:latest"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${IMAGE}:mvp"
+          docker push "${IMAGE}:latest"
+          docker push "ghcr.io/${{ github.repository_owner }}/atlasx:mvp"
+          docker push "ghcr.io/${{ github.repository_owner }}/atlasx:latest"
+          docker logout ghcr.io
+
+      - name: Prefer public visibility (repo package)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          # repo-linked package name is often the image path segment
+          for name in AtlasX-docker atlasx-docker atlasx; do
+            echo "try visibility $name"
+            gh api --method PUT \
+              -H "Accept: application/vnd.github+json" \
+              "/user/packages/container/${name}/visibility" \
+              -f visibility=public && echo OK_$name && break
+          done
+          true
