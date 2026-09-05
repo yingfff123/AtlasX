@@ -1,0 +1,14 @@
+name: verify-ghcr-pull
+on: workflow_dispatch
+permissions:
+  packages: read
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull ghcr.io/yingfff123/atlasx-docker:mvp
+          docker pull ghcr.io/yingfff123/atlasx:mvp
+          docker images | grep yingfff123
+          docker logout ghcr.io
