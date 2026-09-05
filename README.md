@@ -33,13 +33,31 @@ http://<IP>:8000/?token=<token>
 bash update.sh
 ```
 
+## docker pull（已推送 MVP 镜像）
+
+```bash
+# 若包仍是 Private：先在 GitHub Packages 页改为 Public
+# https://github.com/users/yingfff123/packages/container/package/atlasx-docker
+docker pull ghcr.io/yingfff123/atlasx-docker:mvp
+```
+
+`.env`：
+
+```bash
+ATLASX_RELEASE=1
+ATLASX_IMAGE=ghcr.io/yingfff123/atlasx-docker
+ATLASX_IMAGE_TAG=mvp
+```
+
+再 `bash setup.sh` / `update.sh`。
+
 ## 开核发版后（阶段 O）
 
 `.env` 中设：
 
 ```bash
 ATLASX_RELEASE=1
-ATLASX_IMAGE=ghcr.io/yingfff123/atlasx
+ATLASX_IMAGE=ghcr.io/yingfff123/atlasx-docker
 ATLASX_IMAGE_TAG=latest
 ```
 
@@ -55,4 +73,4 @@ ATLASX_IMAGE_TAG=latest
 ## 仓库
 
 - 部署仓：https://github.com/yingfff123/AtlasX-docker
-- 镜像（发版后）：`ghcr.io/yingfff123/atlasx`
+- 镜像（发版后）：`ghcr.io/yingfff123/atlasx-docker`
