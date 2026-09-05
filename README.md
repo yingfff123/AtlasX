@@ -143,6 +143,20 @@ docker build -f Dockerfile -t ghcr.io/yingfff123/atlasx-docker:secure "$ATLASX_R
 
 ---
 
+## 一键更新（升级包）
+
+升级包放在本仓 **Releases**，不必另建仓库。维护说明：[`updates/README.md`](updates/README.md)。
+
+| 用途 | 链接 |
+|------|------|
+| 检查更新通道 | https://raw.githubusercontent.com/yingfff123/AtlasX-docker/main/updates/channel.json |
+| 最新包（资源名固定为 `atlasx-upgrade.zip` 时） | https://github.com/yingfff123/AtlasX-docker/releases/latest/download/atlasx-upgrade.zip |
+| Releases | https://github.com/yingfff123/AtlasX-docker/releases |
+
+用户 `.env` 配置 `RADAR_UPDATE_CHANNEL_URL` 为上表通道后，在 Web **设置 → 系统 → 检查更新** 即可下载并应用。
+
+---
+
 ## 链接
 
 | | |
