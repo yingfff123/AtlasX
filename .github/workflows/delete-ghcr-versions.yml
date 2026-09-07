@@ -8,7 +8,7 @@ on:
         required: true
         default: atlasx-docker
       confirm:
-        description: 'type DELETE to confirm'
+        description: "type DELETE to confirm"
         required: true
 
 permissions:
@@ -22,23 +22,24 @@ jobs:
     steps:
       - name: Delete all versions of package
         env:
-          GH_TOKEN: ${{ secrets.GHCR_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
           PKG: ${{ github.event.inputs.package }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          echo "Deleting versions of container/$PKG ..."
-          # try user namespace then org
+          echo "Deleting versions of container/$PKG as $OWNER ..."
+          BASE=""
           for owner_path in \
             "user/packages/container/${PKG}" \
-            "users/${{ github.repository_owner }}/packages/container/${PKG}"
+            "users/${OWNER}/packages/container/${PKG}"
           do
             if gh api "${owner_path}" --jq .name >/dev/null 2>&1; then
               BASE="$owner_path"
               break
             fi
           done
-          if [[ -z "${BASE:-}" ]]; then
-            echo "package not found or no access: $PKG"
+          if [[ -z "${BASE}" ]]; then
+            echo "package not found via API"
             gh api "user/packages?package_type=container" --jq '.[].name' || true
             exit 1
           fi
@@ -49,8 +50,8 @@ jobs:
             exit 0
           fi
           for id in $ids; do
-            tags="$(gh api "${BASE}/versions/${id}" --jq '.metadata.container.tags | join(",")')"
-            echo "delete version id=$id tags=$tags"
+            tags="$(gh api "${BASE}/versions/${id}" --jq '.metadata.container.tags | join(",")' || true)"
+            echo "DELETE id=$id tags=$tags"
             gh api --method DELETE "${BASE}/versions/${id}"
           done
-          echo "done"
+          echo done
