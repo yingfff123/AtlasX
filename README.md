@@ -62,28 +62,22 @@ ghcr.io/yingfff123/atlasx:secure
 
 ## 架构
 
-```text
-┌─────────────┐     ┌──────────────┐     ┌────────────────┐
-│  Browser    │────▶│  web         │────▶│  Postgres      │
-│  :8000      │     │  (FastAPI)   │     │  atlasx_pgdata │
-└─────────────┘     └──────┬───────┘     └────────────────┘
-                           │ enqueue
-                           ▼
-                    ┌──────────────┐
-                    │  worker      │  采集 / 富化 / 队列
-                    │  (radar)     │
-                    └──────────────┘
-                           │
-              volumes: atlasx_engine / atlasx_updates
+```mermaid
+flowchart LR
+  U["浏览器 :8000"] --> W["web · FastAPI"]
+  W --> DB[("Postgres<br/>atlasx_pgdata")]
+  W -->|enqueue| R["worker · radar"]
+  R --> DB
+  R -.-> V["volumes<br/>engine / updates"]
 ```
 
 | 组件 | 职责 |
 |------|------|
-| **db** | Postgres 16；库表由 web/worker 入口自动初始化 |
 | **web** | UI、鉴权、扫描编排 API |
-| **worker** | 后台扫描与富化（与 web 共用镜像） |
+| **worker** | 采集 / 富化 / 队列（与 web 同镜像） |
+| **db** | Postgres 16；空库由入口自动初始化 |
 
-容器启动顺序：`db` healthy → entrypoint 做 **db-init** → 再启动业务进程。可用 `ATLASX_SKIP_DB_INIT=1` 跳过（一般不需要）。
+启动：`db` healthy → entrypoint **db-init** → 业务进程。一般无需 `ATLASX_SKIP_DB_INIT`。
 
 ## 升级
 
@@ -105,7 +99,7 @@ docker compose up -d
 
 ## 开发：旁路源码构建
 
-同级放置私有主仓 `AtlasX-clean/，然后：
+同级放置私有主仓 `AtlasX-clean/`，然后：
 
 ```bash
 # .env
