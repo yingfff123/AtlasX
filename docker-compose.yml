@@ -17,7 +17,7 @@ services:
     # 故意不 publish 5432
 
   web:
-    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx}:${ATLASX_IMAGE_TAG:-latest}
+    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx}:${ATLASX_IMAGE_TAG:-secure}
     restart: unless-stopped
     depends_on:
       db:
@@ -36,7 +36,7 @@ services:
       ]
 
   worker:
-    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx}:${ATLASX_IMAGE_TAG:-latest}
+    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx}:${ATLASX_IMAGE_TAG:-secure}
     restart: unless-stopped
     depends_on:
       db:
