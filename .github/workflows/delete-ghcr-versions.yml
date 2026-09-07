@@ -20,14 +20,13 @@ jobs:
     if: github.event.inputs.confirm == 'DELETE'
     runs-on: ubuntu-latest
     steps:
-      - name: Delete all versions of package
+      - name: Delete package (all versions)
         env:
           GH_TOKEN: ${{ github.token }}
           PKG: ${{ github.event.inputs.package }}
           OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          echo "Deleting versions of container/$PKG as $OWNER ..."
           BASE=""
           for owner_path in \
             "user/packages/container/${PKG}" \
@@ -39,19 +38,22 @@ jobs:
             fi
           done
           if [[ -z "${BASE}" ]]; then
-            echo "package not found via API"
-            gh api "user/packages?package_type=container" --jq '.[].name' || true
-            exit 1
-          fi
-          echo "BASE=$BASE"
-          ids="$(gh api "${BASE}/versions?per_page=100" --jq '.[].id')"
-          if [[ -z "$ids" ]]; then
-            echo "no versions"
+            echo "package already gone or not found: $PKG"
             exit 0
           fi
-          for id in $ids; do
-            tags="$(gh api "${BASE}/versions/${id}" --jq '.metadata.container.tags | join(",")' || true)"
-            echo "DELETE id=$id tags=$tags"
-            gh api --method DELETE "${BASE}/versions/${id}"
-          done
+          echo "Found $BASE — listing versions then deleting entire package"
+          gh api "${BASE}/versions?per_page=100" --jq '.[] | {id, tags: .metadata.container.tags}' || true
+          # delete versions that are not the last tagged one first
+          ids="$(gh api "${BASE}/versions?per_page=100" --jq '.[].id')"
+          count=$(echo "$ids" | grep -c . || true)
+          echo "version_count=$count"
+          if [[ "$count" -gt 1 ]]; then
+            # delete all but keep trying; last tagged needs package delete
+            for id in $ids; do
+              echo "try delete version $id"
+              gh api --method DELETE "${BASE}/versions/${id}" || true
+            done
+          fi
+          echo "DELETE entire package $BASE"
+          gh api --method DELETE "$BASE"
           echo done
