@@ -1,172 +1,171 @@
 # AtlasX Docker
 
-**一键在 Linux 上部署 AtlasX（企业暴露面雷达）。**
+AtlasX 的 **Linux / Docker 一键部署仓**。面向企业暴露面收集（ASM）：多源子域与测绘采集 → 存活 / 指纹 / 路径富化 → 风险与作业台，数据落在本机 Postgres volume。
 
-Postgres + Web + Worker，一条 `setup.sh` 起全栈。面向 Debian / Ubuntu / Kali 等常见发行版；数据落在 Docker volume，升级不丢库。
+> 本仓只提供 **compose、安装脚本与发版镜像引用**。业务核心以护源镜像交付（`:secure` 内 Nuitka `.so`），**不包含**私有主仓明文核心源码。
 
 ```text
 http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 ```
 
----
+## 核心能力
 
-## 你需要什么
+- **一键拉起**：`setup.sh` 生成 `.env`、拉取 GHCR 镜像、启动 db / web / worker；空库由容器入口自动 `create_all` + stamp，无需手工 migrate。
+- **采集与富化**：镜像内含 Linux 工具链（subfinder、ksubdomain、sublist3r、OneForAll、veo 等）；采集器按 Credential 对接 FOFA / Shodan 等测绘与被动源。
+- **Web + Worker**：UI / API 与扫描队列分离；重启不丢库（`atlasx_pgdata`），引擎热更落独立 volume。
+- **开核发行**：`secure` 护源镜像 + 可选 License 解锁 Pro；`ce` 为 Community 裁剪构建。
+- **可升级**：换镜像 tag 做整包升级；引擎 `.so` 包走公开更新通道 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)。
 
-| 项 | 说明 |
-|----|------|
-| Docker + Compose v2 | 没有则可执行 `sudo bash scripts/install-docker.sh` |
-| 开放端口 | 默认 `8000`（可在 `.env` 改 `ATLASX_HTTP_PORT`） |
-| 磁盘 | 镜像 + Postgres 数据；建议预留数 GB |
+## 快速开始
 
-**不要**把 GitHub Token、`.env`、`MASTER_KEY` 写进 Dockerfile 或提交进仓库。
+### 环境要求
 
----
+- Linux（Debian / Ubuntu / Kali 等）
+- Docker + Docker Compose v2
+- 出网拉取 `ghcr.io`（镜像已公开，一般无需登录）
 
-## 两种安装方式
-
-### 方式一：拉镜像（推荐）
-
-不依赖本机源码，适合服务器与日常升级。
+### 一条命令安装
 
 ```bash
-git clone https://github.com/yingfff123/AtlasX-docker.git
-cd AtlasX-docker
-chmod +x setup.sh update.sh scripts/*.sh
+git clone https://github.com/yingfff123/AtlasX-docker.git && cd AtlasX-docker && bash setup.sh
 ```
 
-编辑 `.env`（首次可先跑 `setup.sh` 自动生成，再改）：
+安装完成后终端会打印访问地址。用 `.env` 中的 `RADAR_ACCESS_TOKEN` 打开：
+
+```text
+http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
+```
+
+默认管理员（首次启动自动引导，**登录后请立刻改密**）：
+
+| 用户名 | 初始密码 |
+|--------|----------|
+| `adminx` | `Atlasx123!@#` |
+
+### 镜像拉取（可选）
+
+```bash
+docker pull ghcr.io/yingfff123/atlasx-docker:secure   # 推荐
+docker pull ghcr.io/yingfff123/atlasx-docker:ce
+docker pull ghcr.io/yingfff123/atlasx-docker:latest   # 同 secure
+```
+
+## 基本工作流
+
+1. `setup.sh` 拉起栈，用 token 打开 Web，登录并修改默认密码。
+2. 在设置中按需配置测绘 / LLM 等 Credential。
+3. 创建企业或项目，录入根域，发起扫描（被动采集默认开启；主动爆破需显式勾选）。
+4. 在资产台查看存活、指纹（veo）、路径与风险摘要；Pro License 解锁深挖 / 报告等能力。
+5. 日常升级：`bash update.sh`（保留数据库 volume）。
+
+## 镜像标签
+
+| Tag | 说明 |
+|-----|------|
+| `secure` | **推荐**。护源发行；含 Pro 实现 so，功能仍由 License 门闸 |
+| `ce` | Community：构建前 strip Pro 实现 |
+| `latest` | 指向当前 `secure` |
+| `mvp` | 全源过渡镜像，仅开发自建，勿当护源验收 |
+
+`.env` 中设置：
 
 ```bash
 ATLASX_RELEASE=1
 ATLASX_IMAGE=ghcr.io/yingfff123/atlasx-docker
-ATLASX_IMAGE_TAG=mvp          # 过渡全源；开核发版后改用 secure
+ATLASX_IMAGE_TAG=secure
 ```
 
-```bash
-bash setup.sh
-```
-
-镜像：
-
-```bash
-docker pull ghcr.io/yingfff123/atlasx-docker:mvp
-# 开核护源镜像就绪后：
-# docker pull ghcr.io/yingfff123/atlasx-docker:secure
-```
-
-若 Packages 仍为 Private，到 GitHub Packages 将该容器包设为 **Public** 后再匿名 pull。
-
-### 方式二：旁路源码构建（开发 / 定制）
-
-将 AtlasX **应用源码仓**与本仓放在同级目录：
+## 架构
 
 ```text
-父目录/
-├── AtlasX/            # 应用源码（旁路主仓）
-└── AtlasX-docker/     # 本仓库
+┌─────────────┐     ┌──────────────┐     ┌────────────────┐
+│  Browser    │────▶│  web         │────▶│  Postgres      │
+│  :8000      │     │  (FastAPI)   │     │  atlasx_pgdata │
+└─────────────┘     └──────┬───────┘     └────────────────┘
+                           │ enqueue
+                           ▼
+                    ┌──────────────┐
+                    │  worker      │  采集 / 富化 / 队列
+                    │  (radar)     │
+                    └──────────────┘
+                           │
+              volumes: atlasx_engine / atlasx_updates
 ```
 
-```bash
-cd AtlasX-docker
-# .env 中 ATLASX_RELEASE=0（或不设），setup 会写入 ATLASX_ROOT
-bash setup.sh
-```
+| 组件 | 职责 |
+|------|------|
+| **db** | Postgres 16；库表由 web/worker 入口自动初始化 |
+| **web** | UI、鉴权、扫描编排 API |
+| **worker** | 后台扫描与富化（与 web 共用镜像） |
 
-将使用 `docker-compose.mvp.yml`，以 `Dockerfile.mvp` 从旁路 `AtlasX` 构建 `atlasx:mvp`。
-
----
+容器启动顺序：`db` healthy → entrypoint 做 **db-init** → 再启动业务进程。可用 `ATLASX_SKIP_DB_INIT=1` 跳过（一般不需要）。
 
 ## 升级
 
 ```bash
+cd AtlasX-docker
 bash update.sh
 ```
 
-- 保留 Postgres 数据卷 `atlasx_pgdata`
-- **不会**覆盖已有 `RADAR_ACCESS_TOKEN` / `MASTER_KEY`
-- `ATLASX_RELEASE=1` 时：`pull` 新镜像 tag 后重启并跑迁移
-- `ATLASX_RELEASE=0` 时：按旁路源码重新 `build`
+- **整包 / 壳升级**：改 `ATLASX_IMAGE_TAG` 后 `update.sh`（或 `docker compose pull && up -d`）。
+- **仅引擎 so**：见 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)，写入 `atlasx_engine` volume。
 
-### 双通道（开核发版后）
-
-| 通道 | 改什么 | 怎么做 |
-|------|--------|--------|
-| **镜像** | 壳 + 内置引擎 | 改 `ATLASX_IMAGE_TAG` → `./update.sh` |
-| **引擎包** | 仅算法 `.so` | Web「系统」页上传引擎升级包；写入 volume `atlasx_engine`，换镜像也不丢 |
-
-护源编译、验收与升级细节见旁路主仓文档：
-
-`AtlasX/docs/superpowers/specs/2026-09-06-open-core-protect-and-upgrade.md`
-
-本地构建开核镜像：
+数据默认保留在 `atlasx_pgdata`。若要空库重来：
 
 ```bash
-export ATLASX_ROOT=/path/to/AtlasX
-docker build -f Dockerfile -t ghcr.io/yingfff123/atlasx-docker:secure "$ATLASX_ROOT"
+docker compose down -v
+docker compose pull
+docker compose up -d
 ```
 
-> `:mvp` 含完整 Python 源码，仅作过渡。护源验收请用 `:secure`（无核心算法 `.py`）。
+## 开发：旁路源码构建
 
----
+同级放置私有主仓 `AtlasX-clean/`（或 `AtlasX/`），然后：
 
-## 访问与安全
+```bash
+# .env
+ATLASX_RELEASE=0
+# setup.sh 会写入 ATLASX_ROOT / ATLASX_DOCKER_ROOT
+bash setup.sh
+```
 
-`setup.sh` 默认生成随机 `RADAR_ACCESS_TOKEN`（`.env` 权限 `600`）。
+在构建机推送护源镜像（建议 tmux）：
 
-| 方式 | 示例 |
+```bash
+export ATLASX_ROOT=/path/to/AtlasX-clean
+echo "$GHCR_TOKEN" | docker login ghcr.io -u USER --password-stdin
+bash scripts/build-and-push-secure.sh
+```
+
+**禁止**把 macOS 的 `tools/bin` 打进镜像；工具须在 Linux 构建阶段安装。
+
+## 安全建议
+
+- 密钥与 token **只放主机 `.env`**，勿提交 git、勿 bake 进镜像。
+- Postgres **不要**映射到公网；公网暴露 8000 时使用强 `RADAR_ACCESS_TOKEN`。
+- 首次登录后立即修改 `adminx` 密码。
+- Classic PAT / `write:packages` 仅用于推镜像的维护者机器，用完轮换。
+
+## 仓库结构
+
+```text
+AtlasX-docker/
+  docker-compose.yml       # 发版：pull GHCR
+  docker-compose.mvp.yml   # 开发：旁路主仓 build
+  Dockerfile               # 护源多阶段（context = 主仓）
+  setup.sh / update.sh     # 安装与升级
+  scripts/                 # wait-db、构建推送等
+  .env.example             # 无密钥；setup 生成正式 .env
+```
+
+## 相关链接
+
+| 资源 | 说明 |
 |------|------|
-| Query | `http://IP:8000/?token=<token>` |
-| Header | `Authorization: Bearer <token>` |
-
-务必做到：
-
-1. 首次登录后**立即修改**默认管理员密码  
-2. Postgres **不**映射到宿主机公网端口（compose 已按此设计）  
-3. 公网部署务必保留强 token / 登录，勿裸奔  
-4. 密钥只放宿主机 `.env` 或 CI Secrets，**永不进镜像**
+| 本仓 | https://github.com/yingfff123/AtlasX-docker |
+| 镜像 | `ghcr.io/yingfff123/atlasx-docker` |
+| 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 ---
 
-## 仓库里有什么
-
-| 文件 | 作用 |
-|------|------|
-| `setup.sh` | 检测环境、写 `.env`、拉起栈 |
-| `update.sh` | 升级镜像或重建，保留数据卷 |
-| `docker-compose.yml` | 发版模式（pull + 引擎热更卷） |
-| `docker-compose.mvp.yml` | 源码构建模式 |
-| `Dockerfile` | 开核多阶段构建（Nuitka → `.so`） |
-| `Dockerfile.mvp` | 全源过渡镜像 |
-| `scripts/` | 装 Docker、等库就绪等辅助脚本 |
-
-服务组成：`db`（Postgres 16）· `web`（API/UI）· `worker`（扫描队列）。
-
----
-
-## 一键更新（升级包）
-
-升级包放在公开仓 **[AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)**（本仓若为 Private，匿名读不到 channel）。
-
-| 用途 | 链接 |
-|------|------|
-| 检查更新通道 | https://raw.githubusercontent.com/yingfff123/AtlasX-updates/main/channel.json |
-| 最新包（资源名 `atlasx-upgrade.zip`） | https://github.com/yingfff123/AtlasX-updates/releases/latest/download/atlasx-upgrade.zip |
-| Releases | https://github.com/yingfff123/AtlasX-updates/releases |
-
-`.env` 配置 `RADAR_UPDATE_CHANNEL_URL` 为上表通道后，在 Web **设置 → 系统 → 检查更新** 即可。
-
----
-
-## 链接
-
-| | |
-|--|--|
-| 部署仓 | https://github.com/yingfff123/AtlasX-docker |
-| 升级仓 | https://github.com/yingfff123/AtlasX-updates |
-| 容器镜像 | [`ghcr.io/yingfff123/atlasx-docker`](https://github.com/users/yingfff123/packages/container/package/atlasx-docker) |
-
----
-
-## License
-
-与 AtlasX 主项目一致（MIT）。
+仅在已获授权的资产范围内使用。滥用采集与扫描能力可能违法。
