@@ -1,0 +1,56 @@
+name: delete-ghcr-versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "container package name (e.g. atlasx-docker)"
+        required: true
+        default: atlasx-docker
+      confirm:
+        description: 'type DELETE to confirm'
+        required: true
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  delete:
+    if: github.event.inputs.confirm == 'DELETE'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all versions of package
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_TOKEN || github.token }}
+          PKG: ${{ github.event.inputs.package }}
+        run: |
+          set -euo pipefail
+          echo "Deleting versions of container/$PKG ..."
+          # try user namespace then org
+          for owner_path in \
+            "user/packages/container/${PKG}" \
+            "users/${{ github.repository_owner }}/packages/container/${PKG}"
+          do
+            if gh api "${owner_path}" --jq .name >/dev/null 2>&1; then
+              BASE="$owner_path"
+              break
+            fi
+          done
+          if [[ -z "${BASE:-}" ]]; then
+            echo "package not found or no access: $PKG"
+            gh api "user/packages?package_type=container" --jq '.[].name' || true
+            exit 1
+          fi
+          echo "BASE=$BASE"
+          ids="$(gh api "${BASE}/versions?per_page=100" --jq '.[].id')"
+          if [[ -z "$ids" ]]; then
+            echo "no versions"
+            exit 0
+          fi
+          for id in $ids; do
+            tags="$(gh api "${BASE}/versions/${id}" --jq '.metadata.container.tags | join(",")')"
+            echo "delete version id=$id tags=$tags"
+            gh api --method DELETE "${BASE}/versions/${id}"
+          done
+          echo "done"
