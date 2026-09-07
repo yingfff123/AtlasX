@@ -50,7 +50,11 @@ http://<主机>:8000/?token=<访问令牌>
 
 ## 快速开始
 
-**环境**：Linux（Debian / Ubuntu / Kali 等）、Docker 与 Docker Compose v2，可访问 `ghcr.io`。
+**环境**：
+
+- 系统：Linux（Debian / Ubuntu / Kali 等）
+- 软件：Docker 与 Docker Compose v2，可访问 `ghcr.io`
+- **最低配置：4 核 CPU / 4 GB 内存**（建议预留磁盘 ≥ 20 GB；资产与并发扫描较多时建议 8 GB 及以上）
 
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
