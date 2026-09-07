@@ -1,4 +1,4 @@
-# AtlasX Docker
+# AtlasX
 
 AtlasX 的 **Linux / Docker 一键部署仓**。面向企业暴露面收集（ASM）：多源子域与测绘采集 → 存活 / 指纹 / 路径富化 → 风险与作业台，数据落在本机 Postgres volume。
 
@@ -27,7 +27,7 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 ### 一条命令安装
 
 ```bash
-git clone https://github.com/yingfff123/AtlasX-docker.git && cd AtlasX-docker && bash setup.sh
+git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 ```
 
 安装完成后终端会打印访问地址。用 `.env` 中的 `RADAR_ACCESS_TOKEN` 打开：
@@ -55,7 +55,7 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 默认拉取护源发版镜像：
 
 ```text
-ghcr.io/yingfff123/atlasx-docker:secure
+ghcr.io/yingfff123/atlasx:secure
 ```
 
 `.env` 中 `ATLASX_RELEASE=1`、`ATLASX_IMAGE_TAG=secure`（`setup.sh` 会写好）。
@@ -88,7 +88,7 @@ ghcr.io/yingfff123/atlasx-docker:secure
 ## 升级
 
 ```bash
-cd AtlasX-docker
+cd AtlasX
 bash update.sh
 ```
 
@@ -105,7 +105,7 @@ docker compose up -d
 
 ## 开发：旁路源码构建
 
-同级放置私有主仓 `AtlasX-clean/`（或 `AtlasX/`），然后：
+同级放置私有主仓 `AtlasX-clean/，然后：
 
 ```bash
 # .env
@@ -134,7 +134,7 @@ bash scripts/build-and-push-secure.sh
 ## 仓库结构
 
 ```text
-AtlasX-docker/
+AtlasX/
   docker-compose.yml       # 发版：pull GHCR
   docker-compose.mvp.yml   # 开发：旁路主仓 build
   Dockerfile               # 护源多阶段（context = 主仓）
@@ -147,8 +147,8 @@ AtlasX-docker/
 
 | 资源 | 说明 |
 |------|------|
-| 本仓 | https://github.com/yingfff123/AtlasX-docker |
-| 镜像 | `ghcr.io/yingfff123/atlasx-docker` |
+| 本仓 | https://github.com/yingfff123/AtlasX |
+| 镜像 | `ghcr.io/yingfff123/atlasx` |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 ---

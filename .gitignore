@@ -1,4 +1,4 @@
-# AtlasX-docker — 切勿提交密钥
+# AtlasX — 切勿提交密钥
 .env
 *.env.local
 .DS_Store

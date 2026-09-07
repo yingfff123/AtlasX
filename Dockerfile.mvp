@@ -1,5 +1,5 @@
 # MVP 运行镜像：整仓可跑 Python + subfinder
-# build context = AtlasX 仓库根；本文件位于 AtlasX-docker/
+# build context = AtlasX 仓库根；本文件位于 AtlasX/
 # 禁止：ARG/ENV 传入 GitHub PAT；禁止 COPY .env / 密钥文件
 
 FROM python:3.12-slim-bookworm

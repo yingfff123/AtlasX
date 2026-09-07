@@ -89,7 +89,7 @@ if [[ "$RELEASE" == "1" ]]; then
     die "pull 失败。可设 ATLASX_RELEASE=0 并用旁路 ../AtlasX 走 MVP build"
   fi
 else
-  [[ -n "$ATLASX_ROOT" ]] || die "未找到旁路主仓 ../AtlasX。请将 AtlasX 与 AtlasX-docker 放在同一父目录，或设置 ATLASX_RELEASE=1 拉镜像"
+  [[ -n "$ATLASX_ROOT" ]] || die "未找到旁路主仓 ../AtlasX。请将 AtlasX 与 AtlasX 放在同一父目录，或设置 ATLASX_RELEASE=1 拉镜像"
   echo "[setup] MVP build context: $ATLASX_ROOT"
   compose "$COMPOSE_FILE" build
 fi

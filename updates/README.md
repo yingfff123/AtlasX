@@ -7,10 +7,10 @@
 1. 环境变量（或镜像 `.env`）：
 
 ```bash
-RADAR_UPDATE_CHANNEL_URL=https://raw.githubusercontent.com/yingfff123/AtlasX-docker/main/updates/channel.json
+RADAR_UPDATE_CHANNEL_URL=https://raw.githubusercontent.com/yingfff123/AtlasX/main/updates/channel.json
 ```
 
-未配置时，应用默认查本仓 GitHub Releases（`yingfff123/AtlasX-docker`）。
+未配置时，应用默认查本仓 GitHub Releases（`yingfff123/AtlasX`）。
 
 2. Web：**设置 → 系统 → 检查更新 → 下载升级包 → 应用**（需重启 web/worker）。
 
@@ -24,7 +24,7 @@ RADAR_UPDATE_CHANNEL_URL=https://raw.githubusercontent.com/yingfff123/AtlasX-doc
 
 ```bash
 gh release create upgrade-0.2.5 ./dist/atlasx-upgrade.zip \
-  --repo yingfff123/AtlasX-docker \
+  --repo yingfff123/AtlasX \
   --title "Upgrade 0.2.5" \
   --notes "修复说明…"
 ```
@@ -35,7 +35,7 @@ gh release create upgrade-0.2.5 ./dist/atlasx-upgrade.zip \
 {
   "version": "0.2.5",
   "notes": "…",
-  "download_url": "https://github.com/yingfff123/AtlasX-docker/releases/download/upgrade-0.2.5/atlasx-upgrade.zip",
+  "download_url": "https://github.com/yingfff123/AtlasX/releases/download/upgrade-0.2.5/atlasx-upgrade.zip",
   "sha256": "<zip 的 sha256>"
 }
 ```
@@ -54,6 +54,6 @@ gh release create upgrade-0.2.5 ./dist/atlasx-upgrade.zip \
 
 | 用途 | URL |
 |------|-----|
-| 检查更新通道 | `https://raw.githubusercontent.com/yingfff123/AtlasX-docker/main/updates/channel.json` |
-| 最新升级包（资源名固定时） | `https://github.com/yingfff123/AtlasX-docker/releases/latest/download/atlasx-upgrade.zip` |
-| Releases 列表 | `https://github.com/yingfff123/AtlasX-docker/releases` |
+| 检查更新通道 | `https://raw.githubusercontent.com/yingfff123/AtlasX/main/updates/channel.json` |
+| 最新升级包（资源名固定时） | `https://github.com/yingfff123/AtlasX/releases/latest/download/atlasx-upgrade.zip` |
+| Releases 列表 | `https://github.com/yingfff123/AtlasX/releases` |
