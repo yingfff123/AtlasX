@@ -1,155 +1,101 @@
 # AtlasX
 
-**企业暴露面收集与持续监控的自托管雷达。**
+**企业暴露面收集与持续监控的自托管系统。**
 
-输入企业与根域，AtlasX 把散落在证书透明、被动 DNS、测绘引擎与主动工具里的影子资产拉齐：归一成可归属的资产库，做存活 / 指纹 / 路径富化，给出可解释的风险与作业线索，并支持跨轮变更对照。数据落在本机 Postgres volume——**你的库、你的密钥、你的出网策略**。
-
-本仓库是 **Linux / Docker 一键部署入口**：compose、安装脚本与护源发版镜像引用。业务核心以 `:secure` 镜像内 Nuitka `.so` 交付，**不包含**私有主仓明文核心源码。可选 License 解锁 Pro 能力（深挖、查询 API、Webhook、威胁报告等）。
+录入企业与根域后，AtlasX 从证书透明、测绘引擎、被动 DNS、搜索与可选主动探测等多路来源汇总影子资产，整理成可归属的资产库；完成存活探测、指纹识别与路径发现，并给出可解释的风险线索与跨轮变更对照。数据保存在本机数据库，密钥与凭据由你自行保管。
 
 ```text
-http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
+http://<主机>:8000/?token=<访问令牌>
 ```
 
-## 它解决什么
+## 它能做什么
 
-子域工具往往只给一张扁平清单。实战缺的是：
+子域工具往往只给一张扁平清单。AtlasX 面向实战作业台：
 
-- **连得起来** — 带来源、置信度、归属证据，能和企业 / 项目 / 上轮扫描对上的资产库
-- **看得懂** — 哪条值得先打、为什么，而不是黑盒分数
-- **信得过** — 原始发现 append-only，算法升级可重放投影，不必整库重扫
-- **收得住** — Web + Worker 常驻、凭据入库加密、公网只暴露受 token / 登录保护的入口
-
-## 流水线（概念）
-
-```text
-根域 / 企业种子
-  → 多源采集（被动测绘 · CT · 搜索 · 可选主动爆破）
-  → 归一与泛解析闸（identity / wildcard）
-  → 存储（Postgres · raw finding 追加）
-  → 富化（DNS · 存活 · 指纹 veo · 路径 / API 面）
-  → 风险与作业台（置信度 · 关联 · 变更 · Pro 深挖 / 报告）
-```
-
-## 能力概览
+- **连得起来** — 资产带来源与置信度，归属到企业 / 项目，并可与历史扫描对照
+- **看得懂** — 优先看哪条、依据是什么，而不是黑盒分数
+- **跟得住** — Web 常驻运行，凭据加密保存；支持持续扫描与变更跟踪
+- **可扩展** — 免 key 源即可首扫；在设置中按需接入 FOFA、Shodan 等商业测绘与 LLM
 
 ### 采集
 
-- **免 key 即可跑通**：crt.sh、subfinder 等被动源；镜像内嵌 Linux 工具链（subfinder、ksubdomain、sublist3r、OneForAll、veo 等）。
-- **测绘与扩展源**：FOFA / Quake / Shodan / Censys / Chaos / ZoomEye 等，以及 Bing / 搜狗 / GitHub dork 等；在设置页配置 Credential，保存即测、按源启用。
-- **主动与被动分离**：被动默认可开；ksubdomain 等主动爆破需显式勾选，控制发包面。
+- 免 key 即可跑通（如证书透明、subfinder 等）
+- 支持 FOFA / Quake / Shodan / Censys / Chaos / ZoomEye，以及 Bing、搜狗、GitHub 等扩展源（设置页配置后启用）
+- 被动采集与主动爆破分离：主动探测需显式勾选，避免误扫面过大
 
-### 去噪与置信
+### 分析与作业
 
-- **泛解析处置**：权威 NS 侧随机名探测，命中则折叠杂波；CDN 多解析剧本仍可入库。
-- **多源佐证**：独立来源累加置信信号；资产带 identity / 类型 / 别名 / 首末见等属性，来源可追溯。
+- 泛解析噪声折叠，降低垃圾子域干扰
+- 多源交叉佐证，提升资产可信度
+- 存活探测、应用指纹、路径与 API 面线索写入资产详情
+- 按企业 / 项目组织扫描；资产台、关联与变更页支持持续跟进
+- 可选接入 LLM，辅助理解与预筛（默认不强制开启）
 
-### 富化与作业台
+### 版本能力
 
-- **存活与指纹**：HTTP(S) 探测 + veo 指纹；路径 / 敏感面与 API 线索进入资产详情。
-- **企业 · 项目 · 扫描**：按企业组织根域与扫描任务；资产台、关联、变更页支撑持续跟进。
-- **可选 LLM**：设置页接入后可增强预筛 / 风险理解等（默认不强制；深挖 LLM 默认不自动全开）。
-
-### 开核（CE / Pro）
-
-| | Community（看见） | Pro（解锁后） |
+| | 标准版 | Pro（License 解锁） |
 |---|---|---|
-| 采集 / 存活 / 指纹 / 作业台 | ✅ 满血 | ✅ |
-| 深挖现象、查询 API / 治理、Webhook | — | ✅ |
-| 《企业暴露面威胁报告》docx、栈相关手测清单 | — | ✅ |
+| 采集、存活、指纹、资产作业台 | ✅ | ✅ |
+| 深挖分析、查询 API、Webhook | — | ✅ |
+| 企业暴露面威胁报告、手测清单 | — | ✅ |
 
-护源镜像可含 Pro 实现，**功能仍由 License 门闸**；未激活时按 CE 使用。
-
-### 交付与升级
-
-- **一键拉起**：`setup.sh` 写 `.env`、拉 GHCR、起 `db` / `web` / `worker`；空库入口自动建表 + alembic stamp。
-- **双通道升级**：整包换镜像 tag（`update.sh`）；引擎 `.so` 包走 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)。
-- **数据与热更隔离**：库在 `atlasx_pgdata`；引擎 / 升级包落独立 volume，重启不丢资产。
+未激活 License 时按标准版使用；激活后在设置中解锁 Pro 能力。
 
 ## 快速开始
 
-### 环境要求
-
-- Linux（Debian / Ubuntu / Kali 等）
-- Docker + Docker Compose v2
-- 出网拉取 `ghcr.io`（镜像已公开，一般无需登录）
-
-### 一条命令安装
+**环境**：Linux（Debian / Ubuntu / Kali 等）、Docker 与 Docker Compose v2，可访问 `ghcr.io`。
 
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 ```
 
-安装完成后终端会打印访问地址。用 `.env` 中的 `RADAR_ACCESS_TOKEN` 打开：
+安装结束后，终端会打印访问地址。使用 `.env` 中的 `RADAR_ACCESS_TOKEN` 打开：
 
 ```text
 http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 ```
 
-默认管理员（首次启动自动引导，**登录后请立刻改密**）：
+首次登录账号（**登录后请立刻修改密码**）：
 
 | 用户名 | 初始密码 |
 |--------|----------|
 | `adminx` | `Atlasx123!@#` |
 
-## 基本工作流
+## 使用流程
 
-1. `setup.sh` 拉起栈 → 用 token 打开 Web → 登录并**立刻改密**。
-2. 设置页按需配置测绘 / 搜索 / LLM 等 Credential（免 key 源可先跑通首扫）。
-3. 创建企业（或项目），录入根域，发起扫描：被动源默认可开，主动爆破需显式勾选。
-4. 在资产台跟进存活、指纹、路径与风险；对照关联 / 变更；需要时激活 Pro 做深挖与报告。
-5. 日常：`bash update.sh` 换镜像；引擎热更见 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)。库 volume 默认保留。
+1. 打开 Web，登录并修改默认密码。
+2. 在设置中按需填写测绘、搜索或 LLM 凭据（也可先用免 key 源完成第一次扫描）。
+3. 创建企业，录入根域，发起扫描；主动爆破类选项仅在需要时勾选。
+4. 在资产台查看存活、指纹、路径与风险，结合关联与变更持续跟进；需要时激活 Pro。
+5. 日常升级执行 `bash update.sh`（默认保留已有数据）。
 
-## 镜像
-
-默认拉取护源发版镜像：
-
-```text
-ghcr.io/yingfff123/atlasx:secure
-```
-
-`.env` 中 `ATLASX_RELEASE=1`、`ATLASX_IMAGE_TAG=secure`（`setup.sh` 会写好）。
-
-## 部署架构
-
-本仓交付形态是三容器栈（同一护源镜像跑 web 与 worker）：
+## 架构
 
 ```mermaid
-flowchart TB
-  subgraph edge["入口"]
-    U["浏览器<br/>:8000 + token / 登录"]
-  end
-  subgraph stack["Docker Compose"]
-    W["web · FastAPI / UI"]
-    R["worker · 采集与富化"]
-    DB[("Postgres 16<br/>atlasx_pgdata")]
-    V["volumes<br/>engine · updates"]
-  end
-  U --> W
-  W --> DB
-  W -->|扫描队列| R
+flowchart LR
+  U["浏览器 :8000"] --> W["Web 控制台"]
+  W --> DB[("数据库")]
+  W -->|任务| R["扫描 Worker"]
   R --> DB
-  R -.-> V
 ```
 
-| 组件 | 职责 |
+| 组件 | 说明 |
 |------|------|
-| **web** | UI、鉴权、扫描编排与设置 API |
-| **worker** | 出网采集、富化、队列消费（与 web 同镜像） |
-| **db** | 资产事件与投影；空库由入口自动初始化 |
+| **Web** | 界面、登录鉴权、扫描与设置 |
+| **Worker** | 后台采集与富化 |
+| **数据库** | 资产与扫描结果持久化（随安装自动初始化） |
 
-启动顺序：`db` healthy → entrypoint **db-init** → 业务进程。一般无需 `ATLASX_SKIP_DB_INIT`。
-
-## 升级
+## 升级与数据
 
 ```bash
 cd AtlasX
 bash update.sh
 ```
 
-- **整包 / 壳升级**：改 `ATLASX_IMAGE_TAG` 后 `update.sh`（或 `docker compose pull && up -d`）。
-- **仅引擎 so**：见 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)，写入 `atlasx_engine` volume。
+- 应用与镜像升级：使用本仓库的 `update.sh`。
+- 在线检查更新也可在 **设置 → 系统** 中操作（通道说明见 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)）。
 
-数据默认保留在 `atlasx_pgdata`。若要空库重来：
+数据默认保留。若需要清空后重装：
 
 ```bash
 docker compose down -v
@@ -157,54 +103,20 @@ docker compose pull
 docker compose up -d
 ```
 
-## 开发：旁路源码构建
-
-同级放置私有主仓 `AtlasX-clean/`，然后：
-
-```bash
-# .env
-ATLASX_RELEASE=0
-# setup.sh 会写入 ATLASX_ROOT / ATLASX_DOCKER_ROOT
-bash setup.sh
-```
-
-在构建机推送护源镜像（建议 tmux）：
-
-```bash
-export ATLASX_ROOT=/path/to/AtlasX-clean
-echo "$GHCR_TOKEN" | docker login ghcr.io -u USER --password-stdin
-bash scripts/build-and-push-secure.sh
-```
-
-**禁止**把 macOS 的 `tools/bin` 打进镜像；工具须在 Linux 构建阶段安装。
-
 ## 安全建议
 
-- 密钥与 token **只放主机 `.env`**，勿提交 git、勿 bake 进镜像。
-- Postgres **不要**映射到公网；公网暴露 8000 时使用强 `RADAR_ACCESS_TOKEN`。
-- 首次登录后立即修改 `adminx` 密码。
-- Classic PAT / `write:packages` 仅用于推镜像的维护者机器，用完轮换。
-
-## 仓库结构
-
-```text
-AtlasX/
-  docker-compose.yml       # 发版：pull GHCR
-  docker-compose.mvp.yml   # 开发：旁路主仓 build
-  Dockerfile               # 护源多阶段（context = 主仓）
-  setup.sh / update.sh     # 安装与升级
-  scripts/                 # wait-db、构建推送等
-  .env.example             # 无密钥；setup 生成正式 .env
-```
+- 访问令牌与各类 API Key 只保存在主机 `.env` 或系统设置中，不要发到公开渠道。
+- 不要将数据库端口映射到公网；若 8000 对公网开放，请使用足够强的访问令牌，并尽快修改默认管理员密码。
+- 仅在已获授权的资产范围内使用本系统。
 
 ## 相关链接
 
-| 资源 | 说明 |
+| 资源 | 地址 |
 |------|------|
-| 本仓 | https://github.com/yingfff123/AtlasX |
-| 镜像 | `ghcr.io/yingfff123/atlasx` |
+| 本仓库 | https://github.com/yingfff123/AtlasX |
+| 容器镜像 | `ghcr.io/yingfff123/atlasx:secure` |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 ---
 
-仅在已获授权的资产范围内使用。滥用采集与扫描能力可能违法。
+滥用采集与扫描能力可能违法。请遵守当地法律与授权范围。
