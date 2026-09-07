@@ -1,0 +1,71 @@
+# Push local-built :secure / :ce tarballs via Actions GITHUB_TOKEN.
+# Fine-grained PAT cannot push GHCR; classic PAT or this path is required.
+name: push-ghcr-secure-ce
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "GitHub release tag holding atlasx-secure.tar.gz / atlasx-ce.tar.gz"
+        required: true
+        default: "image-secure-ce"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tarballs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "atlasx-*.tar.gz" \
+            --dir /tmp
+          ls -lh /tmp/atlasx-*.tar.gz
+
+      - name: Load and push to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER}/atlasx-docker"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          gunzip -c /tmp/atlasx-secure.tar.gz | docker load
+          docker tag "${IMAGE}:secure" "${IMAGE}:latest" || true
+          # Prefer explicit retag from loaded id if tag name differs
+          if ! docker image inspect "${IMAGE}:secure" >/dev/null 2>&1; then
+            LOADED="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E 'atlasx' | head -1)"
+            docker tag "$LOADED" "${IMAGE}:secure"
+            docker tag "$LOADED" "${IMAGE}:latest"
+          fi
+          docker push "${IMAGE}:secure"
+          docker push "${IMAGE}:latest"
+
+          gunzip -c /tmp/atlasx-ce.tar.gz | docker load
+          if ! docker image inspect "${IMAGE}:ce" >/dev/null 2>&1; then
+            LOADED="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E ':ce$|atlasx' | head -1)"
+            docker tag "$LOADED" "${IMAGE}:ce"
+          fi
+          docker push "${IMAGE}:ce"
+
+          docker logout ghcr.io
+          echo "pushed ${IMAGE}:secure :ce :latest"
+
+      - name: Prefer public visibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/user/packages/container/atlasx-docker/visibility" \
+            -f visibility=public && echo OK || echo "WARN: set Public in GitHub Packages UI"
+          exit 0
