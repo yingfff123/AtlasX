@@ -13,8 +13,8 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 - **一键拉起**：`setup.sh` 生成 `.env`、拉取 GHCR 镜像、启动 db / web / worker；空库由容器入口自动 `create_all` + stamp，无需手工 migrate。
 - **采集与富化**：镜像内含 Linux 工具链（subfinder、ksubdomain、sublist3r、OneForAll、veo 等）；采集器按 Credential 对接 FOFA / Shodan 等测绘与被动源。
 - **Web + Worker**：UI / API 与扫描队列分离；重启不丢库（`atlasx_pgdata`），引擎热更落独立 volume。
-- **开核发行**：`secure` 护源镜像 + 可选 License 解锁 Pro；`ce` 为 Community 裁剪构建。
-- **可升级**：换镜像 tag 做整包升级；引擎 `.so` 包走公开更新通道 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)。
+- **开核发行**：护源镜像交付 + 可选 License 解锁 Pro。
+- **可升级**：`update.sh` 拉新镜像；引擎 `.so` 包走公开更新通道 [AtlasX-updates](https://github.com/yingfff123/AtlasX-updates)。
 
 ## 快速开始
 
@@ -42,14 +42,6 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 |--------|----------|
 | `adminx` | `Atlasx123!@#` |
 
-### 镜像拉取（可选）
-
-```bash
-docker pull ghcr.io/yingfff123/atlasx-docker:secure   # 推荐
-docker pull ghcr.io/yingfff123/atlasx-docker:ce
-docker pull ghcr.io/yingfff123/atlasx-docker:latest   # 同 secure
-```
-
 ## 基本工作流
 
 1. `setup.sh` 拉起栈，用 token 打开 Web，登录并修改默认密码。
@@ -58,22 +50,15 @@ docker pull ghcr.io/yingfff123/atlasx-docker:latest   # 同 secure
 4. 在资产台查看存活、指纹（veo）、路径与风险摘要；Pro License 解锁深挖 / 报告等能力。
 5. 日常升级：`bash update.sh`（保留数据库 volume）。
 
-## 镜像标签
+## 镜像
 
-| Tag | 说明 |
-|-----|------|
-| `secure` | **推荐**。护源发行；含 Pro 实现 so，功能仍由 License 门闸 |
-| `ce` | Community：构建前 strip Pro 实现 |
-| `latest` | 指向当前 `secure` |
-| `mvp` | 全源过渡镜像，仅开发自建，勿当护源验收 |
+默认拉取护源发版镜像：
 
-`.env` 中设置：
-
-```bash
-ATLASX_RELEASE=1
-ATLASX_IMAGE=ghcr.io/yingfff123/atlasx-docker
-ATLASX_IMAGE_TAG=secure
+```text
+ghcr.io/yingfff123/atlasx-docker:secure
 ```
+
+`.env` 中 `ATLASX_RELEASE=1`、`ATLASX_IMAGE_TAG=secure`（`setup.sh` 会写好）。
 
 ## 架构
 
