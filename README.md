@@ -9,6 +9,7 @@ http://<主机>:8000/?token=<访问令牌>
 ```
 
 ## 它能做什么
+<img width="2178" height="994" alt="ScreenShot_2026-09-08_233353_914" src="https://github.com/user-attachments/assets/6c8fb5ef-b6ca-4fb4-b31f-06418b31d564" />
 
 子域工具往往只给一张扁平清单。AtlasX 面向实战作业台：
 
