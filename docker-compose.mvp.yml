@@ -17,7 +17,7 @@ services:
 
   web:
     build:
-      context: ${ATLASX_ROOT:?set ATLASX_ROOT to sibling AtlasX path}
+      context: ${ATLASX_ROOT:?set ATLASX_ROOT to sibling AtlasX-clean path}
       dockerfile: ${ATLASX_DOCKER_ROOT:?}/Dockerfile.mvp
     image: atlasx:mvp
     restart: unless-stopped
@@ -25,8 +25,14 @@ services:
       db:
         condition: service_healthy
     env_file: .env
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
     ports:
       - "${ATLASX_HTTP_PORT:-8000}:8000"
+    volumes:
+      - atlasx_engine:/var/atlasx/engine
+      - atlasx_updates:/app/var/updates
+      - atlasx_var:/app/var
     command:
       [
         "uvicorn",
@@ -46,7 +52,19 @@ services:
       web:
         condition: service_started
     env_file: .env
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
+    volumes:
+      - atlasx_engine:/var/atlasx/engine
+      - atlasx_updates:/app/var/updates
+      - atlasx_var:/app/var
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     command: ["radar", "worker"]
 
 volumes:
   atlasx_pgdata:
+  atlasx_engine:
+  atlasx_updates:
+  atlasx_var:
