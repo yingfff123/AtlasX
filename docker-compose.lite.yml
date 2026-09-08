@@ -1,0 +1,21 @@
+# 2C2G 等小机器：限制内存 + 扫描并发=1
+# 用法:
+#   docker compose -f docker-compose.yml -f docker-compose.lite.yml up -d
+services:
+  db:
+    mem_limit: 512m
+    cpus: "0.50"
+  web:
+    mem_limit: 768m
+    cpus: "0.70"
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
+      RADAR_DATABASE_URL: ${RADAR_DATABASE_URL:-postgresql+psycopg://radar:radar@db:5432/radar}
+      RADAR_SCAN_CONCURRENCY: "1"
+  worker:
+    mem_limit: 768m
+    cpus: "0.70"
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
+      RADAR_DATABASE_URL: ${RADAR_DATABASE_URL:-postgresql+psycopg://radar:radar@db:5432/radar}
+      RADAR_SCAN_CONCURRENCY: "1"
