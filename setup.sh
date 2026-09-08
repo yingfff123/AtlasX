@@ -109,7 +109,7 @@ if [[ "$MEM_KB" -lt 3600000 ]] && [[ -f docker-compose.lite.yml ]]; then
 fi
 
 if [[ "$RELEASE" == "1" ]]; then
-  echo "[setup] ATLASX_RELEASE=1 → pull ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
+  echo "[setup] ATLASX_RELEASE=1 → pull ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
   compose "${COMPOSE_ARGS[@]}" pull || die "pull 失败。检查网络 / ghcr 是否可访问"
 else
   [[ -n "${ATLASX_ROOT:-}" ]] || die "未找到旁路主仓（../AtlasX-clean 或 ../AtlasX）。或设 ATLASX_RELEASE=1 拉镜像"

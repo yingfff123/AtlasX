@@ -99,7 +99,7 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 | 组件 | 说明 |
 |------|------|
 | **Web** | 界面、登录鉴权、扫描与设置 |
-| **Worker** | 后台采集与富化 |
+| **Worker** | 后台采集与富化（默认 `cap_add: NET_RAW/NET_ADMIN` 以跑原生 ksubdomain；无权限时自动 DNS 回退） |
 | **数据库** | 资产与扫描结果持久化（随安装自动初始化） |
 
 ## 升级与数据
@@ -130,7 +130,7 @@ docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 容器镜像 | `ghcr.io/yingfff123/atlasx:secure` |
+| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4` |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 ---
