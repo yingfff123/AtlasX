@@ -72,6 +72,7 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 |--------|----------|
 | `adminx` | `Atlasx123!@#` |
 <img width="3024" height="1542" alt="image" src="https://github.com/user-attachments/assets/2b66ce82-4e14-4fb5-963d-796d37b76021" />
+<img width="2956" height="1518" alt="image" src="https://github.com/user-attachments/assets/2c793169-f554-4c3f-bdb7-c4e53c470697" />
 
 
 ## 使用流程
