@@ -1,4 +1,5 @@
-# 阶段 O / 已发版：仅 pull，不在构建时接触 GitHub PAT
+# 发版默认：pull GHCR，不在用户机编译
+# web/worker 必须同 .env 中的 RADAR_MACHINE_ID
 services:
   db:
     image: postgres:16
@@ -23,8 +24,15 @@ services:
       db:
         condition: service_healthy
     env_file: .env
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
+      RADAR_DATABASE_URL: ${RADAR_DATABASE_URL:-postgresql+psycopg://radar:radar@db:5432/radar}
     ports:
       - "${ATLASX_HTTP_PORT:-8000}:8000"
+    volumes:
+      - atlasx_engine:/var/atlasx/engine
+      - atlasx_updates:/app/var/updates
+      - atlasx_var:/app/var
     command:
       [
         "uvicorn",
@@ -42,7 +50,21 @@ services:
       db:
         condition: service_healthy
     env_file: .env
+    environment:
+      RADAR_ENGINE_DIR: /var/atlasx/engine
+      RADAR_DATABASE_URL: ${RADAR_DATABASE_URL:-postgresql+psycopg://radar:radar@db:5432/radar}
+    volumes:
+      - atlasx_engine:/var/atlasx/engine
+      - atlasx_updates:/app/var/updates
+      - atlasx_var:/app/var
+    # ksubdomain 原生爆破需要 raw/pcap；无此能力时采集器自动 DNS 回退
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     command: ["radar", "worker"]
 
 volumes:
   atlasx_pgdata:
+  atlasx_engine:
+  atlasx_updates:
+  atlasx_var:
