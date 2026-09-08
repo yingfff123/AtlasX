@@ -72,6 +72,8 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 | 用户名 | 初始密码 |
 |--------|----------|
 | `adminx` | `Atlasx123!@#` |
+
+
 登录界面
 <img width="2832" height="1458" alt="image" src="https://github.com/user-attachments/assets/1b36fd38-8815-4267-a2ad-d403dd74f228" />
 总览
