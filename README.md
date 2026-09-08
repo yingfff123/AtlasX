@@ -9,7 +9,7 @@ http://<主机>:8000/?token=<访问令牌>
 ```
 
 ## 它能做什么
-<img width="2178" height="994" alt="ScreenShot_2026-09-08_233353_914" src="https://github.com/user-attachments/assets/6c8fb5ef-b6ca-4fb4-b31f-06418b31d564" />
+
 
 子域工具往往只给一张扁平清单。AtlasX 面向实战作业台：
 
@@ -90,13 +90,8 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 
 ## 架构
 
-```mermaid
-flowchart LR
-  U["浏览器 :8000"] --> W["Web 控制台"]
-  W --> DB[("数据库")]
-  W -->|任务| R["扫描 Worker"]
-  R --> DB
-```
+<img width="2178" height="994" alt="ScreenShot_2026-09-08_233353_914" src="https://github.com/user-attachments/assets/a9dc9cf9-968d-4319-8f70-5bdf23046c8f" />
+
 
 | 组件 | 说明 |
 |------|------|
