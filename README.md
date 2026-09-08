@@ -95,6 +95,7 @@ http://<主机>:8000/?token=<RADAR_ACCESS_TOKEN>
 <img width="2178" height="994" alt="ScreenShot_2026-09-08_233353_914" src="https://github.com/user-attachments/assets/a9dc9cf9-968d-4319-8f70-5bdf23046c8f" />
 
 
+
 | 组件 | 说明 |
 |------|------|
 | **Web** | 界面、登录鉴权、扫描与设置 |
