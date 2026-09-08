@@ -1,4 +1,5 @@
 # AtlasX
+<img width="1280" height="369" alt="0" src="https://github.com/user-attachments/assets/afab0f77-5d81-4702-b04e-bbe45f95002d" />
 
 **企业暴露面收集与持续监控的自托管系统。**
 
