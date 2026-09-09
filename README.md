@@ -35,7 +35,7 @@ http://<主机>:8000/?token=<访问令牌>
 
 ### 版本能力
 ##
-<img width="1032" height="1100" alt="ScreenShot_2026-09-09_154355_707" src="https://github.com/user-attachments/assets/2c3fb0d6-5ac0-493f-b8c9-a01a8229ad8c" />
+<img width="532" height="5100" alt="ScreenShot_2026-09-09_154355_707" src="https://github.com/user-attachments/assets/2c3fb0d6-5ac0-493f-b8c9-a01a8229ad8c" />
 
 
 未激活 License 时按标准版使用；在 **设置 → 系统** 激活后一次解锁全部 Pro 能力。
