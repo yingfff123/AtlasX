@@ -15,23 +15,7 @@ compose() {
   fi
 }
 
-resolve_sidecar_root() {
-  if [[ -n "${ATLASX_ROOT:-}" && -f "${ATLASX_ROOT}/pyproject.toml" ]]; then
-    (cd "$ATLASX_ROOT" && pwd)
-    return
-  fi
-  local cand
-  for cand in "$ROOT/../AtlasX-clean" "$ROOT/../AtlasX"; do
-    if [[ -f "$cand/pyproject.toml" ]]; then
-      (cd "$cand" && pwd)
-      return
-    fi
-  done
-  echo ""
-}
-
 ATLASX_DOCKER_ROOT="$ROOT"
-ATLASX_SIDECAR="$(resolve_sidecar_root)"
 set_kv() {
   local k="$1" v="$2"
   if grep -q "^${k}=" .env; then
@@ -41,14 +25,10 @@ set_kv() {
   fi
 }
 set_kv ATLASX_DOCKER_ROOT "$ATLASX_DOCKER_ROOT"
-if [[ -n "$ATLASX_SIDECAR" ]]; then
-  set_kv ATLASX_ROOT "$ATLASX_SIDECAR"
-fi
 
 # shellcheck disable=SC1091
 set -a; source .env; set +a
 
-RELEASE="${ATLASX_RELEASE:-1}"
 COMPOSE_ARGS=(-f docker-compose.yml)
 MEM_KB="$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 999999999)"
 if [[ "$MEM_KB" -lt 3600000 ]] && [[ -f docker-compose.lite.yml ]]; then
@@ -63,13 +43,7 @@ fi
 # shellcheck disable=SC1091
 source "$ROOT/scripts/pull-release.sh"
 
-if [[ "$RELEASE" == "1" ]]; then
-  atlasx_pull_release "${COMPOSE_ARGS[@]}" || { echo "[update] pull 失败" >&2; exit 1; }
-else
-  COMPOSE_ARGS=(-f docker-compose.mvp.yml)
-  [[ -n "${ATLASX_ROOT:-}" ]] || { echo "[update] 缺 ATLASX_ROOT" >&2; exit 1; }
-  compose "${COMPOSE_ARGS[@]}" build
-fi
+atlasx_pull_release "${COMPOSE_ARGS[@]}" || { echo "[update] pull 失败" >&2; exit 1; }
 
 compose "${COMPOSE_ARGS[@]}" up -d
 # wait-db 只接受单个 -f 文件名；用主 compose

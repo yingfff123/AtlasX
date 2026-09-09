@@ -26,21 +26,6 @@ compose() {
   fi
 }
 
-resolve_sidecar_root() {
-  if [[ -n "${ATLASX_ROOT:-}" && -f "${ATLASX_ROOT}/pyproject.toml" ]]; then
-    (cd "$ATLASX_ROOT" && pwd)
-    return
-  fi
-  local cand
-  for cand in "$ROOT/../AtlasX-clean" "$ROOT/../AtlasX"; do
-    if [[ -f "$cand/pyproject.toml" ]]; then
-      (cd "$cand" && pwd)
-      return
-    fi
-  done
-  echo ""
-}
-
 if [[ ! -f .env ]]; then
   cp .env.example .env
   if command -v python3 >/dev/null 2>&1; then
@@ -69,7 +54,6 @@ else
 fi
 
 ATLASX_DOCKER_ROOT="$ROOT"
-ATLASX_SIDECAR="$(resolve_sidecar_root)"
 
 set_kv() {
   local k="$1" v="$2"
@@ -80,7 +64,6 @@ set_kv() {
   fi
 }
 set_kv ATLASX_DOCKER_ROOT "$ATLASX_DOCKER_ROOT"
-set_kv ATLASX_ROOT "${ATLASX_SIDECAR}"
 set_kv RADAR_DATABASE_URL "postgresql+psycopg://radar:radar@db:5432/radar"
 # 确保有 machine id
 if grep -q '^RADAR_MACHINE_ID=$' .env || ! grep -q '^RADAR_MACHINE_ID=' .env; then
@@ -96,7 +79,6 @@ if [[ -z "${RADAR_MACHINE_ID:-}" ]]; then
   die "RADAR_MACHINE_ID 为空；请写入 .env 后重试"
 fi
 
-RELEASE="${ATLASX_RELEASE:-1}"
 COMPOSE_ARGS=(-f docker-compose.yml)
 USE_LITE=0
 
@@ -111,24 +93,12 @@ fi
 # shellcheck disable=SC1091
 source "$ROOT/scripts/pull-release.sh"
 
-if [[ "$RELEASE" == "1" ]]; then
-  echo "[setup] ATLASX_RELEASE=1 → pull 镜像（国内优先南大/1ms 缓存）"
-  atlasx_pull_release "${COMPOSE_ARGS[@]}" || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
-else
-  [[ -n "${ATLASX_ROOT:-}" ]] || die "未找到旁路主仓（../AtlasX-clean 或 ../AtlasX）。或设 ATLASX_RELEASE=1 拉镜像"
-  echo "[setup] MVP build context: $ATLASX_ROOT"
-  COMPOSE_ARGS=(-f docker-compose.mvp.yml)
-  compose "${COMPOSE_ARGS[@]}" build
-fi
+echo "[setup] pull 镜像（国内优先南大/1ms 缓存）"
+atlasx_pull_release "${COMPOSE_ARGS[@]}" || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
 
 compose "${COMPOSE_ARGS[@]}" up -d
 export POSTGRES_USER="${POSTGRES_USER:-radar}" POSTGRES_DB="${POSTGRES_DB:-radar}"
-# wait-db 只认单文件；db 定义在主 compose
-if [[ "$RELEASE" == "1" ]]; then
-  "$ROOT/scripts/wait-db.sh" docker-compose.yml
-else
-  "$ROOT/scripts/wait-db.sh" docker-compose.mvp.yml
-fi
+"$ROOT/scripts/wait-db.sh" docker-compose.yml
 
 # 库表由容器 entrypoint 的 docker_db_init 完成；这里只等 web healthy/up
 echo "[setup] 等待 web 就绪…"

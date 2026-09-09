@@ -2,7 +2,7 @@
 # 等待 compose 服务 db healthy
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE_FILE="${1:-docker-compose.mvp.yml}"
+COMPOSE_FILE="${1:-docker-compose.yml}"
 TRIES="${2:-60}"
 
 cd "$ROOT"
