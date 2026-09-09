@@ -55,7 +55,6 @@
 | docx 威胁报告导出 | ❌ | ✅ |
 | 授权与部署 | MIT 开源自部署 | 商业 License |
 
-<img width="480" alt="ScreenShot_2026-09-09_154355_707" src="https://github.com/user-attachments/assets/2a24dfc2-55a0-4cd4-a5a1-8014d0718f93" />
 
 未激活 License 时按社区版（CE）使用；在 **设置 → 系统** 粘贴 License 后一次解锁全部 Pro 能力（深挖验证、网关配方、查询 API、docx 威胁报告等）。**采集源不按许可阉割**——有 key、有工具就跑。
 
