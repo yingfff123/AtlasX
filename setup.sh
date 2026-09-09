@@ -93,10 +93,10 @@ fi
 # shellcheck disable=SC1091
 source "$ROOT/scripts/pull-release.sh"
 
-echo "[setup] pull 镜像（国内优先南大/1ms 缓存）"
-atlasx_pull_release "${COMPOSE_ARGS[@]}" || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
+echo "[setup] 拉镜像（约 1.3GB）。默认 ghcr.1ms.run；南大源层文件经常 0B 已自动跳过"
+atlasx_pull_release || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
 
-compose "${COMPOSE_ARGS[@]}" up -d
+compose "${COMPOSE_ARGS[@]}" up -d --pull never
 export POSTGRES_USER="${POSTGRES_USER:-radar}" POSTGRES_DB="${POSTGRES_DB:-radar}"
 "$ROOT/scripts/wait-db.sh" docker-compose.yml
 

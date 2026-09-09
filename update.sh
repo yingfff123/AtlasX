@@ -43,12 +43,12 @@ fi
 # shellcheck disable=SC1091
 source "$ROOT/scripts/pull-release.sh"
 
-atlasx_pull_release "${COMPOSE_ARGS[@]}" || { echo "[update] pull 失败" >&2; exit 1; }
+atlasx_pull_release || { echo "[update] pull 失败" >&2; exit 1; }
 
-compose "${COMPOSE_ARGS[@]}" up -d
+compose "${COMPOSE_ARGS[@]}" up -d --pull never
 # wait-db 只接受单个 -f 文件名；用主 compose
 "$ROOT/scripts/wait-db.sh" docker-compose.yml
 
 echo "[update] 完成（atlasx_pgdata / atlasx_engine / atlasx_updates / atlasx_var 已保留）"
-echo "[update] 镜像: ${ATLASX_IMAGE:-ghcr.nju.edu.cn/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
+echo "[update] 镜像: ${ATLASX_IMAGE:-ghcr.1ms.run/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
 echo "[update] 库表由 entrypoint 自动处理；引擎热更后请: docker compose restart web worker"

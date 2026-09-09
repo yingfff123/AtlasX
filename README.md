@@ -65,7 +65,7 @@
 ### 环境要求
 
 - 系统：Linux（Debian / Ubuntu / Kali 等）
-- 软件：Docker 与 Docker Compose v2（国内自动走南大 / 1ms 镜像缓存，不必直连 `ghcr.io`）
+- 软件：Docker 与 Docker Compose v2（国内默认 `ghcr.1ms.run` 拉镜像）
 - **最低配置：2 核 CPU / 2 GB 内存**（建议磁盘 ≥ 20 GB；资产与并发较多时建议 8 GB+）
 
 ### 一键安装
@@ -78,11 +78,13 @@ git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 
 ```bash
 rm -rf AtlasX && mkdir AtlasX && cd AtlasX \
-  && curl -fsSL https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 \
+  && echo "[AtlasX] 下载安装脚本…" \
+  && curl -fL --progress-bar https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 \
   && bash setup.sh
 ```
 
-`setup.sh` 会优先从 `ghcr.nju.edu.cn` / `ghcr.1ms.run` 拉镜像。
+仓库脚本只有十几 KB，几秒就能下完。之后 `setup.sh` 会 `docker pull` 约 1.3GB 镜像（默认 `ghcr.1ms.run`）。若进度长期停在 **0B**，是镜像源层文件下不动，不是脚本死了——当前版本会跳过南大缓存并换源。
+
 安装结束后，终端会打印访问地址与 `.env` 中生成的 `RADAR_ACCESS_TOKEN`。浏览器打开：
 
 ```text
@@ -191,7 +193,7 @@ docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4`（国内安装走南大缓存同 digest） |
+| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4`（国内安装走 `ghcr.1ms.run` 同 digest） |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 创作不易，觉得好用可以点个 Star ⭐
