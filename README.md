@@ -66,7 +66,7 @@
 
 - 系统：Linux（Debian / Ubuntu / Kali 等）
 - 软件：Docker 与 Docker Compose v2，可访问 `ghcr.io`
-- **最低配置：4 核 CPU / 4 GB 内存**（建议磁盘 ≥ 20 GB；资产与并发较多时建议 8 GB+）
+- **最低配置：2 核 CPU / 2 GB 内存**（建议磁盘 ≥ 20 GB；资产与并发较多时建议 8 GB+）
 
 ### 一键安装
 
