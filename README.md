@@ -73,6 +73,9 @@
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 ```
+```
+curl -fsSL https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 && bash setup.sh
+```
 
 安装结束后，终端会打印访问地址与 `.env` 中生成的 `RADAR_ACCESS_TOKEN`。浏览器打开：
 
