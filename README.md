@@ -198,6 +198,30 @@ docker compose up -d
 
 ---
 
+## 鸣谢
+
+AtlasX 站在这些优秀开源项目的肩膀上。采集、爆破、指纹与工程底座离不开社区的长期投入，在此致谢（排名不分先后）：
+
+| 项目 | 作者 / 组织 | 用途 |
+|------|-------------|------|
+| [OneForAll](https://github.com/shmilylty/OneForAll) | [@shmilylty](https://github.com/shmilylty) | 子域聚合与主动爆破编排 |
+| [ksubdomain](https://github.com/boy-hack/ksubdomain) | [@boy-hack](https://github.com/boy-hack) | 高速 DNS 主动枚举 |
+| [subfinder](https://github.com/projectdiscovery/subfinder) | [@projectdiscovery](https://github.com/projectdiscovery) | 被动子域发现 |
+| [Sublist3r](https://github.com/aboul3la/Sublist3r) | [@aboul3la](https://github.com/aboul3la) | 搜索引擎子域收集 |
+| [massdns](https://github.com/blechschmidt/massdns) | [@blechschmidt](https://github.com/blechschmidt) | 高性能 DNS 解析（OneForAll 爆破依赖） |
+| [MUKI](https://github.com/yingfff123/MUKI) | [@yingfff123](https://github.com/yingfff123) | 主动资产指纹与敏感路径规则（AtlasX 采用精简规则集） |
+| [veo](https://github.com/neouks/veo) | [@neouks](https://github.com/neouks) | 可选 Web 指纹识别 |
+| [FastAPI](https://github.com/fastapi/fastapi) | [@tiangolo](https://github.com/tiangolo) | Web 服务框架 |
+| [HTMX](https://github.com/bigskysoftware/htmx) | [@bigskysoftware](https://github.com/bigskysoftware) | 服务端驱动交互 |
+| [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) | [@sqlalchemy](https://github.com/sqlalchemy) | ORM / 数据访问 |
+| [httpx](https://github.com/encode/httpx) / Starlette 等 | [@encode](https://github.com/encode) | HTTP 客户端与 ASGI 生态 |
+
+亦感谢 [crt.sh](https://crt.sh)、HackerTarget、AlienVault OTX 等免费数据源，以及 FOFA / Quake / Shodan / Censys / Chaos / ZoomEye / Hunter 等测绘与情报平台提供的开放 API——AtlasX 只做编排与本地沉淀，能力来自上游。
+
+若遗漏你的项目，欢迎提 Issue，我们会补上。
+
+---
+
 ## 免责声明
 
 AtlasX 仅供**已获合法授权**的安全评估、资产管理与防御研究使用。
