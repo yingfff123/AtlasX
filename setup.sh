@@ -93,7 +93,7 @@ fi
 # shellcheck disable=SC1091
 source "$ROOT/scripts/pull-release.sh"
 
-echo "[setup] 拉镜像（约 1.3GB）。默认 ghcr.1ms.run；南大源层文件经常 0B 已自动跳过"
+echo "[setup] 按本机架构拉镜像（约 1.3GB）。默认 ghcr.1ms.run；南大源层文件经常 0B 已自动跳过"
 atlasx_pull_release || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
 
 compose "${COMPOSE_ARGS[@]}" up -d --pull never
@@ -117,7 +117,7 @@ TOKEN_SHOW="$(grep '^RADAR_ACCESS_TOKEN=' .env | cut -d= -f2- || true)"
 echo ""
 echo "[setup] 完成"
 echo "  UI: http://${IP}:${PORT}/?token=${TOKEN_SHOW}"
-echo "  请登录后立刻修改默认管理员密码（adminx/Atlasx123!@#）；勿将 .env 或 GitHub PAT 放入镜像/仓库"
+echo "  请登录后立刻修改默认管理员密码；勿将 .env 或 GitHub PAT 放入镜像/仓库"
 if [[ "$USE_LITE" == "1" ]]; then
   echo "  模式: lite（低内存）；升级仍用: bash update.sh"
 else

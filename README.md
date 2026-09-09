@@ -64,9 +64,18 @@
 
 ### 环境要求
 
-- 系统：Linux（Debian / Ubuntu / Kali 等）
+- 系统：Linux **amd64**，或 **arm64**（含 Mac Apple Silicon + Docker Desktop）
 - 软件：Docker 与 Docker Compose v2（国内默认 `ghcr.1ms.run` 拉镜像）
 - **最低配置：2 核 CPU / 2 GB 内存**（建议磁盘 ≥ 20 GB；资产与并发较多时建议 8 GB+）
+
+`setup.sh` 会检测 CPU：
+
+| 架构 | 镜像 tag |
+|------|----------|
+| amd64 / x86_64 | `0.2.7.4`（服务器默认） |
+| arm64 / aarch64 | `0.2.7.4-arm64` |
+
+不必另开仓库；同一套安装命令即可。ARM 镜像里 `ksubdomain` / `veo` 可能无预编译，对应功能会自动降级。
 
 ### 一键安装
 
@@ -193,7 +202,7 @@ docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4`（国内安装走 `ghcr.1ms.run` 同 digest） |
+| 容器镜像 | amd64：`…/atlasx-docker:0.2.7.4`；arm64：`…:0.2.7.4-arm64`（国内走 `ghcr.1ms.run`） |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 创作不易，觉得好用可以点个 Star ⭐

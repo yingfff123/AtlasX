@@ -50,5 +50,5 @@ compose "${COMPOSE_ARGS[@]}" up -d --pull never
 "$ROOT/scripts/wait-db.sh" docker-compose.yml
 
 echo "[update] 完成（atlasx_pgdata / atlasx_engine / atlasx_updates / atlasx_var 已保留）"
-echo "[update] 镜像: ${ATLASX_IMAGE:-ghcr.1ms.run/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
+echo "[update] 镜像: ${ATLASX_IMAGE}:${ATLASX_IMAGE_TAG}"
 echo "[update] 库表由 entrypoint 自动处理；引擎热更后请: docker compose restart web worker"

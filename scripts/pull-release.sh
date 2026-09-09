@@ -1,11 +1,62 @@
 #!/usr/bin/env bash
 # 由 setup.sh / update.sh source；需已定义 set_kv()。
 #
+# 架构：
+#   amd64/x86_64 → ATLASX_IMAGE_TAG=0.2.7.4（服务器默认）
+#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.2.7.4-arm64（Mac Apple Silicon / ARM 机）
+#
 # 不用 `docker compose pull`：南大 ghcr.nju.edu.cn 对 /v2 与 manifest 秒回 200，
-# 但 blobs 一直 0 字节，compose pull 不会失败、也不会换源，看起来像脚本卡死。
-# 本地已有镜像则跳过；否则 `docker pull`（有层进度），1ms 优先，南大先探测层文件。
+# 但 blobs 经常 0 字节，compose pull 不会失败、也不会换源。改用 docker pull + 换源。
 
 ATLASX_GHCR_NAME="yingfff123/atlasx-docker"
+ATLASX_VERSION_BASE="${ATLASX_VERSION_BASE:-0.2.7.4}"
+
+atlasx_detect_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo amd64 ;;
+    aarch64|arm64) echo arm64 ;;
+    *) echo unknown ;;
+  esac
+}
+
+# 写入 .env：按本机 CPU 选 tag（可用 ATLASX_IMAGE_TAG 强制覆盖）
+atlasx_apply_arch_defaults() {
+  local arch tag dest
+  arch="$(atlasx_detect_arch)"
+  case "$arch" in
+    amd64)
+      tag="${ATLASX_IMAGE_TAG:-$ATLASX_VERSION_BASE}"
+      # 若用户误把 arm64 tag 拷到 x86，纠正回默认
+      if [[ "$tag" == *"-arm64" ]]; then
+        tag="$ATLASX_VERSION_BASE"
+      fi
+      ;;
+    arm64)
+      # 未显式设置、或仍是 amd64 默认 tag → 改成 -arm64
+      if [[ -z "${ATLASX_IMAGE_TAG:-}" || "${ATLASX_IMAGE_TAG}" == "$ATLASX_VERSION_BASE" ]]; then
+        tag="${ATLASX_VERSION_BASE}-arm64"
+      else
+        tag="${ATLASX_IMAGE_TAG}"
+      fi
+      ;;
+    *)
+      echo "[pull] 不支持的 CPU 架构: $(uname -m)（需要 amd64 或 arm64）" >&2
+      return 1
+      ;;
+  esac
+
+  dest="${ATLASX_IMAGE:-ghcr.1ms.run/${ATLASX_GHCR_NAME}}"
+  # 镜像仓库名固定；只改 tag
+  case "$dest" in
+    */yingfff123/atlasx-docker|yingfff123/atlasx-docker) ;;
+    *) dest="ghcr.1ms.run/${ATLASX_GHCR_NAME}" ;;
+  esac
+
+  set_kv ATLASX_IMAGE "$dest"
+  set_kv ATLASX_IMAGE_TAG "$tag"
+  set -a; source .env; set +a
+  echo "[pull] 架构=${arch} → ${ATLASX_IMAGE}:${ATLASX_IMAGE_TAG}"
+}
 
 atlasx_has_image() {
   docker image inspect "$1" >/dev/null 2>&1
@@ -68,9 +119,11 @@ PY
 }
 
 atlasx_pull_release() {
-  local tag="${ATLASX_IMAGE_TAG:-0.2.7.4}"
+  atlasx_apply_arch_defaults || return 1
+
+  local tag="${ATLASX_IMAGE_TAG}"
   local repo="$ATLASX_GHCR_NAME"
-  local dest="ghcr.1ms.run/${repo}"
+  local dest="${ATLASX_IMAGE:-ghcr.1ms.run/${repo}}"
   local found img ok=0
   local -a cands=()
   local seen=" "
@@ -107,7 +160,13 @@ atlasx_pull_release() {
       fi
       echo "[pull] ${img} 失败，换下一源…"
     done
-    [[ "$ok" == "1" ]] || return 1
+    [[ "$ok" == "1" ]] || {
+      echo "[pull] 失败：未拉到 ${repo}:${tag}" >&2
+      if [[ "$tag" == *"-arm64" ]]; then
+        echo "[pull] ARM 镜像尚未发布或源不可达。可等发版，或本机用 Dockerfile.mvp --platform linux/arm64 自建。" >&2
+      fi
+      return 1
+    }
     set_kv ATLASX_IMAGE "$dest"
     set -a; source .env; set +a
   fi

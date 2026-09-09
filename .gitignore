@@ -9,3 +9,9 @@ build-src/
 secrets/
 .gh-token
 .github_token
+# 发版机私有：构建 Dockerfile 不进公开安装仓
+Dockerfile
+Dockerfile.*
+docker-entrypoint.sh
+docker-compose.mvp.yml
+docker-compose.from-clean.yml
