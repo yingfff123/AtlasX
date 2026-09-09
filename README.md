@@ -55,6 +55,7 @@
 | docx 威胁报告导出 | ❌ | ✅ |
 | 授权与部署 | MIT 开源自部署 | 商业 License |
 
+<img width="480" alt="ScreenShot_2026-09-09_154355_707" src="https://github.com/user-attachments/assets/2a24dfc2-55a0-4cd4-a5a1-8014d0718f93" />
 
 未激活 License 时按社区版（CE）使用；在 **设置 → 系统** 粘贴 License 后一次解锁全部 Pro 能力（深挖验证、网关配方、查询 API、docx 威胁报告等）。**采集源不按许可阉割**——有 key、有工具就跑。
 
@@ -65,7 +66,7 @@
 ### 环境要求
 
 - 系统：Linux（Debian / Ubuntu / Kali 等）
-- 软件：Docker 与 Docker Compose v2，可访问 `ghcr.io`
+- 软件：Docker 与 Docker Compose v2（国内自动走南大 / 1ms 镜像缓存，不必直连 `ghcr.io`）
 - **最低配置：2 核 CPU / 2 GB 内存**（建议磁盘 ≥ 20 GB；资产与并发较多时建议 8 GB+）
 
 ### 一键安装
@@ -73,11 +74,16 @@
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 ```
-#### 国内用户一键安装
-```
-curl -fsSL https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 && bash setup.sh
+
+国内 `git clone` 或直连 `ghcr.io` 不通时：
+
+```bash
+rm -rf AtlasX && mkdir AtlasX && cd AtlasX \
+  && curl -fsSL https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 \
+  && bash setup.sh
 ```
 
+`setup.sh` 会优先从 `ghcr.nju.edu.cn` / `ghcr.1ms.run` 拉镜像。
 安装结束后，终端会打印访问地址与 `.env` 中生成的 `RADAR_ACCESS_TOKEN`。浏览器打开：
 
 ```text
@@ -186,7 +192,7 @@ docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4` |
+| 容器镜像 | `ghcr.io/yingfff123/atlasx-docker:0.2.7.4`（国内安装走南大缓存同 digest） |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates |
 
 创作不易，觉得好用可以点个 Star ⭐

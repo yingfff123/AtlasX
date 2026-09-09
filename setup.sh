@@ -108,9 +108,12 @@ if [[ "$MEM_KB" -lt 3600000 ]] && [[ -f docker-compose.lite.yml ]]; then
   echo "[setup] 检测到内存约 $((MEM_KB/1024))MiB < 3500MiB → 启用 docker-compose.lite.yml"
 fi
 
+# shellcheck disable=SC1091
+source "$ROOT/scripts/pull-release.sh"
+
 if [[ "$RELEASE" == "1" ]]; then
-  echo "[setup] ATLASX_RELEASE=1 → pull ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}"
-  compose "${COMPOSE_ARGS[@]}" pull || die "pull 失败。检查网络 / ghcr 是否可访问"
+  echo "[setup] ATLASX_RELEASE=1 → pull 镜像（国内优先南大/1ms 缓存）"
+  atlasx_pull_release "${COMPOSE_ARGS[@]}" || die "pull 失败。可设 ATLASX_SKIP_MIRROR=1 仅走官方源，或检查网络"
 else
   [[ -n "${ATLASX_ROOT:-}" ]] || die "未找到旁路主仓（../AtlasX-clean 或 ../AtlasX）。或设 ATLASX_RELEASE=1 拉镜像"
   echo "[setup] MVP build context: $ATLASX_ROOT"

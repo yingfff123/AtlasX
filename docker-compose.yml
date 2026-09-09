@@ -2,7 +2,7 @@
 # web/worker 必须同 .env 中的 RADAR_MACHINE_ID
 services:
   db:
-    image: postgres:16
+    image: ${POSTGRES_IMAGE:-docker.m.daocloud.io/library/postgres:16}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-radar}
