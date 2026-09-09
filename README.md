@@ -35,7 +35,8 @@ http://<主机>:8000/?token=<访问令牌>
 
 ### 版本能力
 ##
-<img width="480" alt="ScreenShot_2026-09-09_154355_707" src="https://github.com/user-attachments/assets/2a24dfc2-55a0-4cd4-a5a1-8014d0718f93" />
+<img width="1252" height="498" alt="image" src="https://github.com/user-attachments/assets/d7f36c45-7807-482e-8016-4cf4c069c135" />
+
 
 
 
