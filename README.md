@@ -73,6 +73,7 @@
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
 ```
+#### 国内用户一键安装
 ```
 curl -fsSL https://codeload.github.com/yingfff123/AtlasX/tar.gz/refs/heads/main | tar xz --strip-components=1 && bash setup.sh
 ```
