@@ -218,7 +218,7 @@ AtlasX 站在这些优秀开源项目的肩膀上。采集、爆破、指纹与�
 
 亦感谢 [crt.sh](https://crt.sh)、HackerTarget、AlienVault OTX 等免费数据源，以及 FOFA / Quake / Shodan / Censys / Chaos / ZoomEye / Hunter 等测绘与情报平台提供的开放 API——AtlasX 只做编排与本地沉淀，能力来自上游。
 
-若遗漏你的项目，欢迎提 Issue，我们会补上。
+若遗漏你的项目，欢迎提 Issue，我会补上。
 
 ---
 
