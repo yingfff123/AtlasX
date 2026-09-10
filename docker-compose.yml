@@ -18,7 +18,7 @@ services:
     # 故意不 publish 5432
 
   web:
-    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}
+    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.8}
     restart: unless-stopped
     depends_on:
       db:
@@ -44,7 +44,7 @@ services:
       ]
 
   worker:
-    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.7.4}
+    image: ${ATLASX_IMAGE:-ghcr.io/yingfff123/atlasx-docker}:${ATLASX_IMAGE_TAG:-0.2.8}
     restart: unless-stopped
     depends_on:
       db:

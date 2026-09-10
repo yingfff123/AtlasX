@@ -117,7 +117,7 @@ TOKEN_SHOW="$(grep '^RADAR_ACCESS_TOKEN=' .env | cut -d= -f2- || true)"
 echo ""
 echo "[setup] 完成"
 echo "  UI: http://${IP}:${PORT}/?token=${TOKEN_SHOW}"
-echo "  请登录后立刻修改默认管理员密码：adminx/Adminx123!@# "
+echo "  请登录后立刻修改默认管理员密码：adminx / Atlasx123!@#"
 if [[ "$USE_LITE" == "1" ]]; then
   echo "  模式: lite（低内存）；升级仍用: bash update.sh"
 else

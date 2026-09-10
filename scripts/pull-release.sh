@@ -2,14 +2,14 @@
 # 由 setup.sh / update.sh source；需已定义 set_kv()。
 #
 # 架构：
-#   amd64/x86_64 → ATLASX_IMAGE_TAG=0.2.7.4（服务器默认）
-#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.2.7.4-arm64（Mac Apple Silicon / ARM 机）
+#   amd64/x86_64 → ATLASX_IMAGE_TAG=0.2.8（服务器默认）
+#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.2.8-arm64（Mac Apple Silicon / ARM 机）
 #
 # 不用 `docker compose pull`：南大 ghcr.nju.edu.cn 对 /v2 与 manifest 秒回 200，
 # 但 blobs 经常 0 字节，compose pull 不会失败、也不会换源。改用 docker pull + 换源。
 
 ATLASX_GHCR_NAME="yingfff123/atlasx-docker"
-ATLASX_VERSION_BASE="${ATLASX_VERSION_BASE:-0.2.7.4}"
+ATLASX_VERSION_BASE="${ATLASX_VERSION_BASE:-0.2.8}"
 
 atlasx_detect_arch() {
   case "$(uname -m)" in
