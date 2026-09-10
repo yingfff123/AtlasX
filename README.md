@@ -90,9 +90,6 @@ rm -rf AtlasX && mkdir AtlasX && cd AtlasX \
   && bash setup.sh
 ```
 
-仓库脚本只有十几 KB，几秒就能下完。之后 `setup.sh` 会 `docker pull` 约 1.3GB 镜像（默认 `ghcr.1ms.run`）。若进度长期停在 **0B**，是镜像源层文件下不动，不是脚本死了——当前版本会跳过南大缓存并换源。
-
-安装结束后，终端会打印访问地址与 `.env` 中生成的 `RADAR_ACCESS_TOKEN`。浏览器打开：
 
 ```text
 http://<主机>:8000/
