@@ -1,0 +1,391 @@
+diff --git a/tests/conftest.py b/tests/conftest.py
+new file mode 100644
+index 0000000..642bc98
+--- /dev/null
++++ b/tests/conftest.py
+@@ -0,0 +1,28 @@
++"""Test env must be set before radar.config.Settings loads."""
++
++from __future__ import annotations
++
++import os
++
++from cryptography.fernet import Fernet
++
++os.environ.setdefault("RADAR_MASTER_KEY", Fernet.generate_key().decode())
++# Import-time create_engine is lazy; do not use SQLite (pool_size args are PG-only).
++os.environ.setdefault(
++    "RADAR_DATABASE_URL",
++    "postgresql+psycopg://radar:radar@127.0.0.1:1/radar",
++)
++os.environ.setdefault("RADAR_ALLOW_INSECURE_DB", "1")
++os.environ.setdefault("RADAR_SKIP_RESET_ZOMBIE", "1")
++os.environ.setdefault("RADAR_HTTPS_ONLY", "0")
++
++import pytest
++
++from radar.auth.rbac import invalidate_users_exist_cache
++
++
++@pytest.fixture(autouse=True)
++def _reset_users_exist_cache():
++    invalidate_users_exist_cache()
++    yield
++    invalidate_users_exist_cache()
+diff --git a/tests/test_startup_auth_gates.py b/tests/test_startup_auth_gates.py
+new file mode 100644
+index 0000000..db4517a
+--- /dev/null
++++ b/tests/test_startup_auth_gates.py
+@@ -0,0 +1,203 @@
++"""Fail-closed Web lifespan: ensure_ready + assert_not_open_mode must not be swallowed."""
++
++from __future__ import annotations
++
++import asyncio
++from contextlib import contextmanager
++from unittest.mock import MagicMock, patch
++
++import pytest
++from fastapi.testclient import TestClient
++
++
++def _fake_session_cm():
++    @contextmanager
++    def _cm():
++        s = MagicMock()
++        s.get.return_value = None
++        yield s
++
++    return _cm()
++
++
++def _lifespan_patches(**overrides):
++    """Patch DB-touching startup so tests can exercise lifespan without PG."""
++    mapping = {
++        "radar.server.app.ensure_ready": MagicMock(name="ensure_ready"),
++        "radar.server.app.dispose_engine": MagicMock(name="dispose_engine"),
++        "radar.server.app.kill_zombie_scans": MagicMock(return_value=0),
++        "radar.server.app.get_session": MagicMock(side_effect=_fake_session_cm),
++        "radar.llm.base.configure_from_session": MagicMock(),
++        "radar.server.proxy.apply_from_session": MagicMock(),
++        "radar.auth.bootstrap.ensure_default_admin": MagicMock(return_value=False),
++        "radar.auth.bootstrap.backfill_must_change_for_default_password": MagicMock(
++            return_value=0
++        ),
++        "radar.auth.bootstrap.assert_not_open_mode": MagicMock(),
++        "radar.logging_setup.quiet_http_loggers": MagicMock(),
++        "radar.sys_log.install_runtime_handler": MagicMock(),
++    }
++    mapping.update(overrides)
++    return mapping
++
++
++@contextmanager
++def patched_lifespan(**overrides):
++    mapping = _lifespan_patches(**overrides)
++    cms = [patch(target, new=value) for target, value in mapping.items()]
++    started = []
++    try:
++        for cm in cms:
++            started.append(cm)
++            cm.__enter__()
++        yield mapping
++    finally:
++        for cm in reversed(started):
++            cm.__exit__(None, None, None)
++
++
++async def _enter_lifespan(app, lifespan_fn):
++    async with lifespan_fn(app):
++        return "served"
++
++
++def _assert_lifespan_aborts(app, lifespan_fn, *, match: str) -> None:
++    """SystemExit from hard gates must surface; TestClient must not yield a server."""
++    served_direct = False
++    with pytest.raises(SystemExit, match=match):
++        result = asyncio.run(_enter_lifespan(app, lifespan_fn))
++        served_direct = result == "served"
++    assert served_direct is False
++
++    served_client = False
++    with pytest.raises(BaseException):
++        with TestClient(app) as client:
++            served_client = True
++            client.get("/healthz")
++    assert served_client is False
++
++
++def test_lifespan_invokes_ensure_ready():
++    from radar.server.app import app
++
++    ready = MagicMock(name="ensure_ready")
++    with patched_lifespan(**{"radar.server.app.ensure_ready": ready}):
++        with TestClient(app) as client:
++            client.get("/healthz")
++    assert ready.call_count >= 1
++
++
++def test_lifespan_aborts_when_ensure_ready_exits():
++    from radar.server.app import app, lifespan
++
++    ready = MagicMock(side_effect=SystemExit("无法连接 PostgreSQL"))
++    with patched_lifespan(**{"radar.server.app.ensure_ready": ready}):
++        _assert_lifespan_aborts(app, lifespan, match="PostgreSQL")
++    assert ready.call_count >= 1
++
++
++def test_lifespan_aborts_when_assert_not_open_mode_exits():
++    from radar.server.app import app, lifespan
++
++    gate = MagicMock(side_effect=SystemExit("拒绝开放模式"))
++    with patched_lifespan(**{"radar.auth.bootstrap.assert_not_open_mode": gate}):
++        _assert_lifespan_aborts(app, lifespan, match="开放模式")
++    assert gate.call_count >= 1
++
++
++def test_assert_not_open_mode_not_swallowed_when_bootstrap_fails():
++    """Regression: ensure_default_admin 普通异常不得跳过开放模式硬门。"""
++    from radar.server.app import app, lifespan
++
++    boot = MagicMock(side_effect=RuntimeError("app_user 表未迁移"))
++    gate = MagicMock(side_effect=SystemExit("拒绝开放模式"))
++    with patched_lifespan(
++        **{
++            "radar.auth.bootstrap.ensure_default_admin": boot,
++            "radar.auth.bootstrap.assert_not_open_mode": gate,
++        }
++    ):
++        _assert_lifespan_aborts(app, lifespan, match="开放模式")
++    assert boot.call_count >= 1
++    assert gate.call_count >= 1
++
++
++def test_assert_not_open_mode_not_swallowed_when_soft_cleanup_fails():
++    from radar.server.app import app, lifespan
++
++    gate = MagicMock(side_effect=SystemExit("拒绝开放模式"))
++    with patched_lifespan(
++        **{
++            "radar.server.app.kill_zombie_scans": MagicMock(
++                side_effect=RuntimeError("pg_stat_activity 不可用")
++            ),
++            "radar.auth.bootstrap.assert_not_open_mode": gate,
++        }
++    ):
++        _assert_lifespan_aborts(app, lifespan, match="开放模式")
++    assert gate.call_count >= 1
++
++
++def test_ensure_ready_runs_before_soft_cleanup():
++    from radar.server.app import app
++
++    order: list[str] = []
++
++    def ready():
++        order.append("ensure_ready")
++
++    def zombies():
++        order.append("zombie")
++        return 0
++
++    def boot():
++        order.append("bootstrap")
++        return False
++
++    def gate():
++        order.append("assert_not_open_mode")
++
++    with patched_lifespan(
++        **{
++            "radar.server.app.ensure_ready": MagicMock(side_effect=ready),
++            "radar.server.app.kill_zombie_scans": MagicMock(side_effect=zombies),
++            "radar.auth.bootstrap.ensure_default_admin": MagicMock(side_effect=boot),
++            "radar.auth.bootstrap.assert_not_open_mode": MagicMock(side_effect=gate),
++        }
++    ):
++        with TestClient(app):
++            pass
++    assert order.index("ensure_ready") < order.index("zombie")
++    assert order.index("bootstrap") < order.index("assert_not_open_mode")
++    assert order[-1] == "assert_not_open_mode"
++
++
++def test_soft_systemexit_from_bootstrap_still_aborts():
++    from radar.server.app import app, lifespan
++
++    boot = MagicMock(side_effect=SystemExit("bootstrap refused"))
++    with patched_lifespan(
++        **{"radar.auth.bootstrap.ensure_default_admin": boot}
++    ):
++        _assert_lifespan_aborts(app, lifespan, match="bootstrap refused")
++
++
++def test_assert_not_open_mode_empty_db_empty_token_exits(monkeypatch):
++    """空库 + 空 TOKEN + SKIP_DEFAULT_ADMIN → 拒启。"""
++    monkeypatch.setenv("RADAR_SKIP_DEFAULT_ADMIN", "1")
++    monkeypatch.setenv("RADAR_ACCESS_TOKEN", "")
++    from radar.auth.bootstrap import assert_not_open_mode
++    from radar.config import settings
++
++    monkeypatch.setattr(settings, "access_token", "")
++    with patch("radar.auth.rbac.users_exist", return_value=False):
++        with pytest.raises(SystemExit, match="拒绝开放模式"):
++            assert_not_open_mode()
++
++
++def test_assert_not_open_mode_allows_access_token_without_users(monkeypatch):
++    monkeypatch.setenv("RADAR_ACCESS_TOKEN", "wave1-token")
++    from radar.auth.bootstrap import assert_not_open_mode
++
++    with patch("radar.auth.rbac.users_exist", return_value=False):
++        assert_not_open_mode()
+diff --git a/tests/test_users_exist_and_open_write.py b/tests/test_users_exist_and_open_write.py
+new file mode 100644
+index 0000000..c398787
+--- /dev/null
++++ b/tests/test_users_exist_and_open_write.py
+@@ -0,0 +1,142 @@
++"""AX-SEC-11: users_exist 负缓存 + 无用户不可匿名 can_write。"""
++
++from __future__ import annotations
++
++from unittest.mock import MagicMock, patch
++
++import pytest
++from fastapi import FastAPI, Request
++from fastapi.testclient import TestClient
++
++from radar.auth.rbac import (
++    TOKEN_ADMIN,
++    invalidate_users_exist_cache,
++    users_exist,
++)
++
++
++class _Scalar:
++    def __init__(self, n):
++        self._n = n
++
++    def scalar(self):
++        return self._n
++
++
++class _CountingSession:
++    def __init__(self, counts: list[int | Exception]):
++        self._counts = list(counts)
++        self.calls = 0
++
++    def execute(self, *_a, **_k):
++        self.calls += 1
++        val = self._counts.pop(0)
++        if isinstance(val, Exception):
++            raise val
++        return _Scalar(val)
++
++
++def test_users_exist_does_not_cache_false():
++    session = _CountingSession([0, 1])
++    assert users_exist(session) is False
++    assert users_exist(session) is True
++    assert session.calls == 2
++
++
++def test_users_exist_caches_true_until_invalidate():
++    session = _CountingSession([1, 0])
++    assert users_exist(session) is True
++    assert users_exist(session) is True
++    assert session.calls == 1
++    invalidate_users_exist_cache()
++    assert users_exist(session) is False
++    assert session.calls == 2
++
++
++def test_users_exist_db_failure_raises():
++    session = _CountingSession([RuntimeError("pg down")])
++    with pytest.raises(RuntimeError, match="pg down"):
++        users_exist(session)
++
++
++def _probe_client():
++    """Minimal app + AtlasX auth middleware; no Web lifespan."""
++    from radar.server.app import _AuthMiddleware
++
++    probe = FastAPI()
++
++    @probe.get("/api/probe")
++    def _probe(request: Request):
++        user = getattr(request.state, "user", None)
++        return {
++            "can_write": bool(getattr(request.state, "can_write", False)),
++            "username": getattr(user, "username", None),
++            "is_token_admin": user is TOKEN_ADMIN,
++        }
++
++    @probe.post("/api/probe-write")
++    def _write(request: Request):
++        return {"can_write": bool(getattr(request.state, "can_write", False))}
++
++    @probe.get("/overview-html")
++    def _html(request: Request):
++        return {"can_write": bool(getattr(request.state, "can_write", False))}
++
++    probe.add_middleware(_AuthMiddleware)
++    return TestClient(probe)
++
++
++def test_no_users_anonymous_does_not_get_can_write():
++    with (
++        patch("radar.auth.rbac.users_exist", return_value=False),
++        patch("radar.server.app._access_token_ok", return_value=None),
++    ):
++        client = _probe_client()
++        r = client.get("/api/probe", headers={"Accept": "application/json"})
++    assert r.status_code == 401
++    assert r.json()["detail"] == "unauthorized"
++
++
++def test_no_users_html_redirects_to_login_not_open_write():
++    with (
++        patch("radar.auth.rbac.users_exist", return_value=False),
++        patch("radar.server.app._access_token_ok", return_value=None),
++    ):
++        client = _probe_client()
++        r = client.get(
++            "/overview-html", headers={"Accept": "text/html"}, follow_redirects=False
++        )
++    assert r.status_code == 303
++    assert "/login" in r.headers.get("location", "")
++
++
++def test_no_users_access_token_is_token_admin_can_write():
++    with (
++        patch("radar.auth.rbac.users_exist", return_value=False),
++        patch("radar.server.app._access_token_ok", return_value=True),
++    ):
++        client = _probe_client()
++        r = client.get("/api/probe")
++    assert r.status_code == 200
++    body = r.json()
++    assert body["can_write"] is True
++    assert body["is_token_admin"] is True
++    assert body["username"] == "__token__"
++
++
++def test_no_users_wrong_access_token_unauthorized():
++    with (
++        patch("radar.auth.rbac.users_exist", return_value=False),
++        patch("radar.server.app._access_token_ok", return_value=False),
++    ):
++        client = _probe_client()
++        r = client.get("/api/probe")
++    assert r.status_code == 401
++
++
++def test_users_exist_db_failure_is_503():
++    with patch("radar.auth.rbac.users_exist", side_effect=RuntimeError("pg down")):
++        client = _probe_client()
++        r = client.get("/api/probe")
++    assert r.status_code == 503
++    assert r.json()["detail"] == "auth_unavailable"
