@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/deploy-Docker-2496ED.svg)](https://github.com/yingfff123/AtlasX)
-[![Release](https://img.shields.io/badge/release-v0.2.8-brightgreen.svg)](https://github.com/yingfff123/AtlasX)
+[![Release](https://img.shields.io/badge/release-v0.4.1-brightgreen.svg)](https://github.com/yingfff123/AtlasX)
 
 **企业暴露面收集与持续监控 —— 自托管 ASM。**
 
@@ -42,9 +42,9 @@
 
 ## 快速开始
 
-- 系统：Linux **amd64** 或 **arm64**（含 Mac Apple Silicon + Docker Desktop）
+- 系统：Linux **amd64**（推荐）；arm64 官方镜像尚未随 0.4.1 发布
 - Docker Compose v2；建议 ≥ 2C / 2G（磁盘 ≥ 20G）
-- `setup.sh` 按架构拉镜像：`0.4.1`（amd64）或 `0.4.1-arm64`
+- `setup.sh` 默认拉镜像：`atlasx-docker:0.4.1`（国内源 `ghcr.1ms.run`）
 
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
@@ -133,8 +133,8 @@ docker compose down -v && docker compose pull && docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 镜像 | amd64：`atlasx-docker:0.2.8`；arm64：`atlasx-docker:0.2.8-arm64`（国内默认 `ghcr.1ms.run`） |
-| 更新通道 | https://github.com/yingfff123/AtlasX-updates |
+| 镜像 | `ghcr.io/yingfff123/atlasx-docker:0.4.1`（国内默认 `ghcr.1ms.run/...:0.4.1`，与 `:latest` 同 digest） |
+| 更新通道 | https://github.com/yingfff123/AtlasX-updates（zip 热更包 `upgrade-0.4.1`） |
 
 ---
 

@@ -2,14 +2,17 @@
 # 由 setup.sh / update.sh source；需已定义 set_kv()。
 #
 # 架构：
-#   amd64/x86_64 → ATLASX_IMAGE_TAG=0.2.8（服务器默认）
-#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.2.8-arm64（Mac Apple Silicon / ARM 机）
+#   amd64/x86_64 → ATLASX_IMAGE_TAG=0.4.1（服务器默认）
+#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.4.1-arm64（需官方已发 ARM 镜像；当前 0.4.1 仅 amd64）
+#
+# 默认始终跟到 ATLASX_VERSION_BASE（setup / update 拉新版）。
+# 若要钉死旧 tag：export ATLASX_PIN_IMAGE_TAG=1 且 .env 里写好 ATLASX_IMAGE_TAG。
 #
 # 不用 `docker compose pull`：南大 ghcr.nju.edu.cn 对 /v2 与 manifest 秒回 200，
 # 但 blobs 经常 0 字节，compose pull 不会失败、也不会换源。改用 docker pull + 换源。
 
 ATLASX_GHCR_NAME="yingfff123/atlasx-docker"
-ATLASX_VERSION_BASE="${ATLASX_VERSION_BASE:-0.2.8}"
+ATLASX_VERSION_BASE="${ATLASX_VERSION_BASE:-0.4.1}"
 
 atlasx_detect_arch() {
   case "$(uname -m)" in
@@ -19,24 +22,27 @@ atlasx_detect_arch() {
   esac
 }
 
-# 写入 .env：按本机 CPU 选 tag（可用 ATLASX_IMAGE_TAG 强制覆盖）
+# 写入 .env：按本机 CPU 选 tag
 atlasx_apply_arch_defaults() {
   local arch tag dest
   arch="$(atlasx_detect_arch)"
   case "$arch" in
     amd64)
-      tag="${ATLASX_IMAGE_TAG:-$ATLASX_VERSION_BASE}"
+      if [[ "${ATLASX_PIN_IMAGE_TAG:-0}" == "1" && -n "${ATLASX_IMAGE_TAG:-}" ]]; then
+        tag="${ATLASX_IMAGE_TAG}"
+      else
+        tag="$ATLASX_VERSION_BASE"
+      fi
       # 若用户误把 arm64 tag 拷到 x86，纠正回默认
       if [[ "$tag" == *"-arm64" ]]; then
         tag="$ATLASX_VERSION_BASE"
       fi
       ;;
     arm64)
-      # 未显式设置、或仍是 amd64 默认 tag → 改成 -arm64
-      if [[ -z "${ATLASX_IMAGE_TAG:-}" || "${ATLASX_IMAGE_TAG}" == "$ATLASX_VERSION_BASE" ]]; then
-        tag="${ATLASX_VERSION_BASE}-arm64"
-      else
+      if [[ "${ATLASX_PIN_IMAGE_TAG:-0}" == "1" && -n "${ATLASX_IMAGE_TAG:-}" ]]; then
         tag="${ATLASX_IMAGE_TAG}"
+      else
+        tag="${ATLASX_VERSION_BASE}-arm64"
       fi
       ;;
     *)
@@ -163,7 +169,7 @@ atlasx_pull_release() {
     [[ "$ok" == "1" ]] || {
       echo "[pull] 失败：未拉到 ${repo}:${tag}" >&2
       if [[ "$tag" == *"-arm64" ]]; then
-        echo "[pull] ARM 镜像尚未发布或源不可达。可等发版，或本机用 Dockerfile.mvp --platform linux/arm64 自建。" >&2
+        echo "[pull] 当前 0.4.1 仅发布 linux/amd64；尚无 ${tag}。请用 amd64 机器一键安装，或本机 Dockerfile.mvp --platform linux/arm64 自建。" >&2
       fi
       return 1
     }
