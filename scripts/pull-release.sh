@@ -3,7 +3,7 @@
 #
 # 架构：
 #   amd64/x86_64 → ATLASX_IMAGE_TAG=0.4.1（服务器默认）
-#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.4.1-arm64（需官方已发 ARM 镜像；当前 0.4.1 仅 amd64）
+#   arm64/aarch64 → ATLASX_IMAGE_TAG=0.4.1-arm64（Mac Apple Silicon / ARM 机）
 #
 # 默认始终跟到 ATLASX_VERSION_BASE（setup / update 拉新版）。
 # 若要钉死旧 tag：export ATLASX_PIN_IMAGE_TAG=1 且 .env 里写好 ATLASX_IMAGE_TAG。
@@ -169,7 +169,7 @@ atlasx_pull_release() {
     [[ "$ok" == "1" ]] || {
       echo "[pull] 失败：未拉到 ${repo}:${tag}" >&2
       if [[ "$tag" == *"-arm64" ]]; then
-        echo "[pull] 当前 0.4.1 仅发布 linux/amd64；尚无 ${tag}。请用 amd64 机器一键安装，或本机 Dockerfile.mvp --platform linux/arm64 自建。" >&2
+        echo "[pull] ARM 镜像尚未同步或源不可达。可稍后重试，或本机用 Dockerfile.mvp --platform linux/arm64 自建。" >&2
       fi
       return 1
     }

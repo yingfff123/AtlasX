@@ -42,9 +42,9 @@
 
 ## 快速开始
 
-- 系统：Linux **amd64**（推荐）；arm64 官方镜像尚未随 0.4.1 发布
+- 系统：Linux **amd64** 或 **arm64**（含 Mac Apple Silicon + Docker Desktop）
 - Docker Compose v2；建议 ≥ 2C / 2G（磁盘 ≥ 20G）
-- `setup.sh` 默认拉镜像：`atlasx-docker:0.4.1`（国内源 `ghcr.1ms.run`）
+- `setup.sh` 按架构拉镜像：`0.4.1`（amd64）或 `0.4.1-arm64`
 
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
@@ -133,7 +133,7 @@ docker compose down -v && docker compose pull && docker compose up -d
 | 资源 | 地址 |
 |------|------|
 | 本仓库 | https://github.com/yingfff123/AtlasX |
-| 镜像 | `ghcr.io/yingfff123/atlasx-docker:0.4.1`（国内默认 `ghcr.1ms.run/...:0.4.1`，与 `:latest` 同 digest） |
+| 镜像 | amd64：`atlasx-docker:0.4.1`；arm64：`atlasx-docker:0.4.1-arm64`（国内默认 `ghcr.1ms.run`；`:latest` 为 amd64） |
 | 更新通道 | https://github.com/yingfff123/AtlasX-updates（zip 热更包 `upgrade-0.4.1`） |
 
 ---
