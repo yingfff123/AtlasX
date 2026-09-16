@@ -44,7 +44,7 @@
 
 - 系统：Linux **amd64** 或 **arm64**（含 Mac Apple Silicon + Docker Desktop）
 - Docker Compose v2；建议 ≥ 2C / 2G（磁盘 ≥ 20G）
-- `setup.sh` 按架构拉镜像：`0.2.8`（amd64）或 `0.2.8-arm64`
+- `setup.sh` 按架构拉镜像：`0.4.1`（amd64）或 `0.4.1-arm64`
 
 ```bash
 git clone https://github.com/yingfff123/AtlasX.git && cd AtlasX && bash setup.sh
