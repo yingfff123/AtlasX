@@ -1,0 +1,172 @@
+diff --git a/src/radar/auth/rbac.py b/src/radar/auth/rbac.py
+index 128e3a2..5ccfa88 100644
+--- a/src/radar/auth/rbac.py
++++ b/src/radar/auth/rbac.py
+@@ -70,22 +70,30 @@ def invalidate_users_exist_cache() -> None:
+ 
+ 
+ def users_exist(session: Any | None = None) -> bool:
+-    """库中是否已有 Web 用户。有则强制登录。"""
++    """库中是否已有 Web 用户。有则强制登录。
++
++    只缓存 True：永久负缓存会在用户已创建后仍按「无用户」语义放行。
++    用户 CRUD 仍须调用 invalidate_users_exist_cache。
++    """
+     global _users_exist_cache
+-    if _users_exist_cache is not None:
+-        return _users_exist_cache
++    if _users_exist_cache is True:
++        return True
+     from radar.storage.models import AppUser
+ 
++    def _exists(s: Any) -> bool:
++        n = s.execute(select(func.count(AppUser.id))).scalar() or 0
++        return n > 0
++
+     if session is not None:
+-        n = session.execute(select(func.count(AppUser.id))).scalar() or 0
+-        _users_exist_cache = n > 0
+-        return _users_exist_cache
+-    from radar.storage.db import session as session_factory
++        exists = _exists(session)
++    else:
++        from radar.storage.db import session as session_factory
+ 
+-    with session_factory() as s:
+-        n = s.execute(select(func.count(AppUser.id))).scalar() or 0
+-        _users_exist_cache = n > 0
+-        return _users_exist_cache
++        with session_factory() as s:
++            exists = _exists(s)
++    if exists:
++        _users_exist_cache = True
++    return exists
+ 
+ 
+ def _viewer_query_api_allowed(method: str, path: str) -> bool:
+diff --git a/src/radar/server/app.py b/src/radar/server/app.py
+index d0743f3..b380c21 100644
+--- a/src/radar/server/app.py
++++ b/src/radar/server/app.py
+@@ -17,7 +17,7 @@ from sqlalchemy import select
+ from radar import pipeline
+ from radar.server.deps import auth_from_request, get_session, view_context, view_context_lite
+ from radar.server.templates_env import templates
+-from radar.storage.db import dispose_engine, kill_zombie_scans, reset_zombie_runs
++from radar.storage.db import dispose_engine, ensure_ready, kill_zombie_scans, reset_zombie_runs
+ from radar.storage.models import KvState, ScanRun
+ 
+ _log = logging.getLogger(__name__)
+@@ -32,27 +32,31 @@ async def lifespan(app: FastAPI):
+     install_runtime_handler()
+     # 1. 清空连接池：让上一次进程被 SIGKILL 留下的 stale 物理连接从池中丢弃
+     dispose_engine()
+-    # 2. 杀 zombie 事务（有新鲜心跳的 running 时不会 terminate，避免误杀 worker enrich）
++    # HARD: PG / 表 / master_key 就绪。失败（含 SystemExit）不得被 soft try 吞掉。
++    ensure_ready()
++    # SOFT: zombie / LLM / proxy / KV（普通 Exception 不阻断；SystemExit 一律上抛）
+     try:
+         killed = kill_zombie_scans()
+         if killed:
+             _log.warning("lifespan: 清理了 %d 个 zombie 事务", killed)
++        with get_session() as s:
++            reset_zombie_runs(s)
++            from radar.llm.base import configure_from_session
++
++            configure_from_session(s)
++            from radar.server.proxy import apply_from_session
++
++            apply_from_session(s)
++            # 清遗留单扫锁 / reload 续跑 KV（扫描已迁到独立 worker）
++            for key in ("running_scan_id", "resume_scan_after_reload"):
++                row = s.get(KvState, key)
++                if row is not None:
++                    s.delete(row)
++    except SystemExit:
++        raise
+     except Exception as exc:  # noqa: BLE001 - 清理失败不阻断
+-        _log.warning("lifespan: kill_zombie_scans 失败: %r", exc)
+-    with get_session() as s:
+-        reset_zombie_runs(s)
+-        from radar.llm.base import configure_from_session
+-
+-        configure_from_session(s)
+-        from radar.server.proxy import apply_from_session
+-
+-        apply_from_session(s)
+-        # 清遗留单扫锁 / reload 续跑 KV（扫描已迁到独立 worker）
+-        for key in ("running_scan_id", "resume_scan_after_reload"):
+-            row = s.get(KvState, key)
+-            if row is not None:
+-                s.delete(row)
+-    # 首次安装：无用户时写入默认管理员 adminx
++        _log.warning("lifespan: 启动清理失败: %r", exc)
++    # SOFT: 默认管理员 bootstrap（与开放模式硬门分离；表未迁移等可 warning）
+     try:
+         from radar.auth.bootstrap import (
+             backfill_must_change_for_default_password,
+@@ -61,13 +65,14 @@ async def lifespan(app: FastAPI):
+ 
+         ensure_default_admin()
+         backfill_must_change_for_default_password()
+-        from radar.auth.bootstrap import assert_not_open_mode
+-
+-        assert_not_open_mode()
+     except SystemExit:
+         raise
+     except Exception as exc:  # noqa: BLE001 — 表未迁移时不阻断启动
+         _log.warning("lifespan: ensure_default_admin 失败: %r", exc)
++    # HARD: 无用户且无 ACCESS_TOKEN 则拒绝开放模式（不得因 bootstrap 普通异常被跳过）
++    from radar.auth.bootstrap import assert_not_open_mode
++
++    assert_not_open_mode()
+     yield
+     # Web 退出不再取消扫描——worker 独立存活
+ 
+@@ -276,11 +281,43 @@ class _AuthMiddleware:
+                     await _respond(JSONResponse({"detail": "unauthorized"}, status_code=401))
+                     return
+             else:
+-                if token_status is False:
++                if token_status is True:
++                    # ACCESS_TOKEN 机器入口：等同 admin，不走匿名开放写
++                    request.state.user = TOKEN_ADMIN
++                    request.state.can_write = True
++                elif token_status is False:
++                    await _respond(JSONResponse({"detail": "unauthorized"}, status_code=401))
++                    return
++                else:
++                    # 无用户且未配置 TOKEN：禁止匿名 can_write（启动硬门的请求级兜底）
++                    request.state.user = None
++                    request.state.can_write = False
++                    if path in ("/login", "/logout") or path.startswith("/login/"):
++                        await self.app(scope, receive, send)
++                        return
++                    if hx:
++                        await _respond(
++                            JSONResponse(
++                                {"detail": "unauthorized", "login": "/login"},
++                                status_code=401,
++                            )
++                        )
++                        return
++                    if _wants_html(request):
++                        nxt = path
++                        if request.url.query:
++                            nxt = f"{path}?{request.url.query}"
++                        if nxt.split("?", 1)[0].rstrip("/") == "/account/password":
++                            nxt = "/"
++                        await _respond(
++                            RedirectResponse(
++                                f"/login?next={quote(nxt, safe='')}",
++                                status_code=303,
++                            )
++                        )
++                        return
+                     await _respond(JSONResponse({"detail": "unauthorized"}, status_code=401))
+                     return
+-                request.state.user = None
+-                request.state.can_write = True
+ 
+             user = getattr(request.state, "user", None)
+             # 默认口令 / 强制改密：除改密与登出外一律拦截
